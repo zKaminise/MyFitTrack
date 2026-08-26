@@ -1,0 +1,14 @@
+{
+  "_comment": "Override manual: slug do nosso exercicio -> nome EXATO do exercicio no free-exercise-db. Tem prioridade sobre o matching automatico.",
+  "hack-machine": "Barbell Hack Squat",
+  "abducao-maquina": "Thigh Abductor",
+  "gluteo-polia": "Glute Kickback",
+  "remada-maquina": "Leverage High Row",
+  "abdominal-maquina": "Cable Crunch",
+  "pullover-polia": "Rope Straight-Arm Pulldown",
+  "supino-inclinado-maquina": "Leverage Incline Chest Press",
+  "agachamento-livre": "Barbell Squat",
+  "stiff": "Romanian Deadlift",
+  "triceps-testa": "Lying Triceps Press",
+  "abdominal-supra": "Crunches"
+}

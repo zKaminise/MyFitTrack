@@ -1,0 +1,19 @@
+node_modules/
+dist/
+dev-dist/
+coverage/
+*.tsbuildinfo
+.DS_Store
+supabase/.temp/
+supabase/.branches/
+.env
+.env.local
+.env.*.local
+*.local
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+coverage
+# Nunca versionar dados pessoais exportados
+meus-treinos-*.json
+myfittrack-backup-*.json

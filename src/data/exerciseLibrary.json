@@ -1,0 +1,84 @@
+[
+  { "slug": "supino-reto-maquina", "name": "Supino Reto Maquina", "en": "Machine Bench Press", "aliases": ["chest press", "bench press machine"], "primaryMuscle": "peito", "secondaryMuscles": ["triceps", "ombros"], "equipment": "maquina" },
+  { "slug": "supino-reto-barra", "name": "Supino Reto Barra", "en": "Barbell Bench Press - Medium Grip", "aliases": ["barbell bench press", "bench press"], "primaryMuscle": "peito", "secondaryMuscles": ["triceps", "ombros"], "equipment": "barra" },
+  { "slug": "supino-reto-halteres", "name": "Supino Reto Halteres", "en": "Dumbbell Bench Press", "aliases": ["dumbbell bench press"], "primaryMuscle": "peito", "secondaryMuscles": ["triceps", "ombros"], "equipment": "halteres" },
+  { "slug": "supino-inclinado-maquina", "name": "Supino Inclinado Maquina", "en": "Machine Incline Bench Press", "aliases": ["incline chest press"], "primaryMuscle": "peito", "secondaryMuscles": ["ombros", "triceps"], "equipment": "maquina" },
+  { "slug": "supino-inclinado-halteres", "name": "Supino Inclinado Halteres", "en": "Incline Dumbbell Press", "aliases": ["incline dumbbell bench press"], "primaryMuscle": "peito", "secondaryMuscles": ["ombros", "triceps"], "equipment": "halteres" },
+  { "slug": "supino-inclinado-barra", "name": "Supino Inclinado Barra", "en": "Barbell Incline Bench Press - Medium Grip", "aliases": ["incline barbell bench press"], "primaryMuscle": "peito", "secondaryMuscles": ["ombros", "triceps"], "equipment": "barra" },
+  { "slug": "crucifixo-maquina", "name": "Crucifixo Maquina (Peck Deck)", "en": "Butterfly", "aliases": ["pec deck", "voador", "machine fly", "peck deck"], "primaryMuscle": "peito", "secondaryMuscles": [], "equipment": "maquina" },
+  { "slug": "crucifixo-halteres", "name": "Crucifixo Halteres", "en": "Dumbbell Flyes", "aliases": ["dumbbell fly"], "primaryMuscle": "peito", "secondaryMuscles": [], "equipment": "halteres" },
+  { "slug": "crossover", "name": "Crossover na Polia", "en": "Cable Crossover", "aliases": ["cable crossover", "cross over"], "primaryMuscle": "peito", "secondaryMuscles": [], "equipment": "polia" },
+  { "slug": "flexao", "name": "Flexao de Braco", "en": "Pushups", "aliases": ["push up", "push-ups", "pushup"], "primaryMuscle": "peito", "secondaryMuscles": ["triceps", "ombros"], "equipment": "peso-corporal" },
+
+  { "slug": "puxada-frente", "name": "Puxada Frente (Pulldown)", "en": "Wide-Grip Lat Pulldown", "aliases": ["lat pulldown", "pulldown", "pull down"], "primaryMuscle": "costas", "secondaryMuscles": ["biceps"], "equipment": "polia" },
+  { "slug": "puxada-triangulo", "name": "Puxada com Triangulo", "en": "Close-Grip Front Lat Pulldown", "aliases": ["close grip pulldown"], "primaryMuscle": "costas", "secondaryMuscles": ["biceps"], "equipment": "polia" },
+  { "slug": "remada-curvada-barra", "name": "Remada Curvada Barra", "en": "Bent Over Barbell Row", "aliases": ["barbell row", "bent over row"], "primaryMuscle": "costas", "secondaryMuscles": ["biceps", "lombar"], "equipment": "barra" },
+  { "slug": "remada-maquina", "name": "Remada Maquina", "en": "Leverage High Row", "aliases": ["machine row", "lever row"], "primaryMuscle": "costas", "secondaryMuscles": ["biceps"], "equipment": "maquina" },
+  { "slug": "remada-baixa-polia", "name": "Remada Baixa Polia", "en": "Seated Cable Rows", "aliases": ["seated row", "remada sentada", "cable row"], "primaryMuscle": "costas", "secondaryMuscles": ["biceps"], "equipment": "polia" },
+  { "slug": "remada-unilateral-halter", "name": "Remada Unilateral Halter", "en": "One-Arm Dumbbell Row", "aliases": ["serrote", "dumbbell row"], "primaryMuscle": "costas", "secondaryMuscles": ["biceps"], "equipment": "halteres" },
+  { "slug": "barra-fixa", "name": "Barra Fixa", "en": "Pullups", "aliases": ["pull up", "pull-ups", "pullup"], "primaryMuscle": "costas", "secondaryMuscles": ["biceps"], "equipment": "peso-corporal" },
+  { "slug": "pulldown-supinado", "name": "Puxada Supinada", "en": "Underhand Cable Pulldowns", "aliases": ["reverse grip pulldown", "underhand pulldown"], "primaryMuscle": "costas", "secondaryMuscles": ["biceps"], "equipment": "polia" },
+  { "slug": "pullover-polia", "name": "Pullover na Polia", "en": "Rope Straight-Arm Pulldown", "aliases": ["straight arm pulldown", "pullover"], "primaryMuscle": "costas", "secondaryMuscles": ["peito"], "equipment": "polia" },
+
+  { "slug": "agachamento-livre", "name": "Agachamento Livre", "en": "Barbell Squat", "aliases": ["squat", "back squat", "barbell full squat"], "primaryMuscle": "quadriceps", "secondaryMuscles": ["gluteos", "posterior"], "equipment": "barra" },
+  { "slug": "agachamento-smith", "name": "Agachamento Smith", "en": "Smith Machine Squat", "aliases": ["smith squat"], "primaryMuscle": "quadriceps", "secondaryMuscles": ["gluteos"], "equipment": "smith" },
+  { "slug": "leg-press", "name": "Leg Press 45", "en": "Leg Press", "aliases": ["leg press 45"], "primaryMuscle": "quadriceps", "secondaryMuscles": ["gluteos", "posterior"], "equipment": "maquina" },
+  { "slug": "cadeira-extensora", "name": "Cadeira Extensora", "en": "Leg Extensions", "aliases": ["leg extension"], "primaryMuscle": "quadriceps", "secondaryMuscles": [], "equipment": "maquina" },
+  { "slug": "hack-machine", "name": "Agachamento Hack", "en": "Barbell Hack Squat", "aliases": ["hack squat"], "primaryMuscle": "quadriceps", "secondaryMuscles": ["gluteos"], "equipment": "maquina" },
+  { "slug": "afundo", "name": "Afundo (Passada)", "en": "Dumbbell Lunges", "aliases": ["lunge", "avanco", "passada", "dumbbell lunge"], "primaryMuscle": "quadriceps", "secondaryMuscles": ["gluteos"], "equipment": "halteres" },
+  { "slug": "bulgaro", "name": "Agachamento Bulgaro", "en": "Bulgarian Split Squat", "aliases": ["split squat"], "primaryMuscle": "quadriceps", "secondaryMuscles": ["gluteos"], "equipment": "halteres" },
+
+  { "slug": "mesa-flexora", "name": "Mesa Flexora", "en": "Lying Leg Curls", "aliases": ["lying leg curl", "leg curl"], "primaryMuscle": "posterior", "secondaryMuscles": [], "equipment": "maquina" },
+  { "slug": "cadeira-flexora", "name": "Cadeira Flexora", "en": "Seated Leg Curl", "aliases": ["seated leg curl"], "primaryMuscle": "posterior", "secondaryMuscles": [], "equipment": "maquina" },
+  { "slug": "stiff", "name": "Stiff (Levantamento Terra Romeno)", "en": "Stiff-Legged Barbell Deadlift", "aliases": ["rdl", "romanian deadlift", "terra romeno", "stiff leg deadlift"], "primaryMuscle": "posterior", "secondaryMuscles": ["gluteos", "lombar"], "equipment": "barra" },
+  { "slug": "flexora-em-pe", "name": "Flexora em Pe", "en": "Standing Leg Curl", "aliases": ["standing leg curl"], "primaryMuscle": "posterior", "secondaryMuscles": [], "equipment": "maquina" },
+
+  { "slug": "elevacao-pelvica", "name": "Elevacao Pelvica (Hip Thrust)", "en": "Barbell Hip Thrust", "aliases": ["hip thrust", "glute bridge"], "primaryMuscle": "gluteos", "secondaryMuscles": ["posterior"], "equipment": "barra" },
+  { "slug": "gluteo-polia", "name": "Gluteo na Polia (Kickback)", "en": "Glute Kickback", "aliases": ["cable kickback", "kickback"], "primaryMuscle": "gluteos", "secondaryMuscles": [], "equipment": "polia" },
+  { "slug": "abducao-maquina", "name": "Cadeira Abdutora", "en": "Thigh Abductor", "aliases": ["hip abductor", "abductor machine"], "primaryMuscle": "gluteos", "secondaryMuscles": [], "equipment": "maquina" },
+
+  { "slug": "desenvolvimento-maquina", "name": "Desenvolvimento Maquina", "en": "Machine Shoulder (Military) Press", "aliases": ["shoulder press machine"], "primaryMuscle": "ombros", "secondaryMuscles": ["triceps"], "equipment": "maquina" },
+  { "slug": "desenvolvimento-halteres", "name": "Desenvolvimento Halteres", "en": "Dumbbell Shoulder Press", "aliases": ["shoulder press", "dumbbell press"], "primaryMuscle": "ombros", "secondaryMuscles": ["triceps"], "equipment": "halteres" },
+  { "slug": "elevacao-lateral", "name": "Elevacao Lateral", "en": "Side Lateral Raise", "aliases": ["lateral raise", "side raise"], "primaryMuscle": "ombros", "secondaryMuscles": [], "equipment": "halteres" },
+  { "slug": "elevacao-lateral-polia", "name": "Elevacao Lateral Polia", "en": "Cable Seated Lateral Raise", "aliases": ["cable lateral raise"], "primaryMuscle": "ombros", "secondaryMuscles": [], "equipment": "polia" },
+  { "slug": "elevacao-frontal", "name": "Elevacao Frontal", "en": "Front Dumbbell Raise", "aliases": ["front raise"], "primaryMuscle": "ombros", "secondaryMuscles": [], "equipment": "halteres" },
+  { "slug": "crucifixo-inverso", "name": "Crucifixo Inverso", "en": "Reverse Machine Flyes", "aliases": ["reverse pec deck", "rear delt fly", "reverse fly"], "primaryMuscle": "ombros", "secondaryMuscles": ["trapezio"], "equipment": "maquina" },
+  { "slug": "desenvolvimento-arnold", "name": "Desenvolvimento Arnold", "en": "Arnold Dumbbell Press", "aliases": ["arnold press"], "primaryMuscle": "ombros", "secondaryMuscles": ["triceps"], "equipment": "halteres" },
+
+  { "slug": "rosca-direta-barra", "name": "Rosca Direta Barra", "en": "Barbell Curl", "aliases": ["barbell curl", "bicep curl"], "primaryMuscle": "biceps", "secondaryMuscles": [], "equipment": "barra" },
+  { "slug": "rosca-alternada", "name": "Rosca Alternada Halteres", "en": "Dumbbell Alternate Bicep Curl", "aliases": ["dumbbell curl", "alternate curl"], "primaryMuscle": "biceps", "secondaryMuscles": [], "equipment": "halteres" },
+  { "slug": "rosca-scott", "name": "Rosca Scott", "en": "Preacher Curl", "aliases": ["preacher curl", "scott curl"], "primaryMuscle": "biceps", "secondaryMuscles": [], "equipment": "maquina" },
+  { "slug": "rosca-martelo", "name": "Rosca Martelo", "en": "Hammer Curls", "aliases": ["hammer curl"], "primaryMuscle": "biceps", "secondaryMuscles": ["antebraco"], "equipment": "halteres" },
+  { "slug": "rosca-polia", "name": "Rosca na Polia", "en": "Standing Biceps Cable Curl", "aliases": ["cable curl"], "primaryMuscle": "biceps", "secondaryMuscles": [], "equipment": "polia" },
+
+  { "slug": "triceps-corda", "name": "Triceps Corda", "en": "Triceps Pushdown - Rope Attachment", "aliases": ["rope pushdown", "triceps pulley corda", "rope tricep"], "primaryMuscle": "triceps", "secondaryMuscles": [], "equipment": "polia" },
+  { "slug": "triceps-barra", "name": "Triceps Barra (Pulley)", "en": "Triceps Pushdown", "aliases": ["triceps pushdown", "tricep pushdown"], "primaryMuscle": "triceps", "secondaryMuscles": [], "equipment": "polia" },
+  { "slug": "triceps-unilateral", "name": "Triceps Unilateral Polia", "en": "Reverse Grip Triceps Pushdown", "aliases": ["one arm tricep pushdown"], "primaryMuscle": "triceps", "secondaryMuscles": [], "equipment": "polia" },
+  { "slug": "triceps-testa", "name": "Triceps Testa", "en": "Lying Triceps Press", "aliases": ["skull crusher", "skullcrusher", "lying tricep extension"], "primaryMuscle": "triceps", "secondaryMuscles": [], "equipment": "barra" },
+  { "slug": "triceps-frances", "name": "Triceps Frances", "en": "Standing Dumbbell Triceps Extension", "aliases": ["overhead tricep extension", "french press"], "primaryMuscle": "triceps", "secondaryMuscles": [], "equipment": "halteres" },
+  { "slug": "mergulho-banco", "name": "Mergulho no Banco", "en": "Bench Dips", "aliases": ["bench dips", "dips", "tricep dips"], "primaryMuscle": "triceps", "secondaryMuscles": ["peito"], "equipment": "peso-corporal" },
+
+  { "slug": "panturrilha-em-pe", "name": "Panturrilha em Pe", "en": "Standing Calf Raises", "aliases": ["standing calf raise"], "primaryMuscle": "panturrilha", "secondaryMuscles": [], "equipment": "maquina" },
+  { "slug": "panturrilha-sentado", "name": "Panturrilha Sentado", "en": "Seated Calf Raise", "aliases": ["seated calf raise"], "primaryMuscle": "panturrilha", "secondaryMuscles": [], "equipment": "maquina" },
+  { "slug": "panturrilha-leg-press", "name": "Panturrilha no Leg Press", "en": "Calf Press On The Leg Press Machine", "aliases": ["leg press calf raise"], "primaryMuscle": "panturrilha", "secondaryMuscles": [], "equipment": "maquina" },
+
+  { "slug": "abdominal-supra", "name": "Abdominal Supra", "en": "Crunches", "aliases": ["crunch", "sit up"], "primaryMuscle": "abdomen", "secondaryMuscles": [], "equipment": "peso-corporal" },
+  { "slug": "prancha", "name": "Prancha", "en": "Plank", "aliases": ["plank"], "primaryMuscle": "abdomen", "secondaryMuscles": ["lombar"], "equipment": "peso-corporal" },
+  { "slug": "abdominal-maquina", "name": "Abdominal Maquina", "en": "Cable Crunch", "aliases": ["ab crunch machine", "machine crunch"], "primaryMuscle": "abdomen", "secondaryMuscles": [], "equipment": "maquina" },
+  { "slug": "elevacao-pernas", "name": "Elevacao de Pernas", "en": "Hanging Leg Raise", "aliases": ["leg raise", "hanging leg raise"], "primaryMuscle": "abdomen", "secondaryMuscles": [], "equipment": "peso-corporal" },
+
+  { "slug": "hiperextensao", "name": "Hiperextensao (Banco Romano)", "en": "Hyperextensions (Back Extensions)", "aliases": ["back extension", "hyperextension"], "primaryMuscle": "lombar", "secondaryMuscles": ["gluteos", "posterior"], "equipment": "peso-corporal" },
+  { "slug": "terra", "name": "Levantamento Terra", "en": "Barbell Deadlift", "aliases": ["deadlift"], "primaryMuscle": "lombar", "secondaryMuscles": ["costas", "gluteos", "posterior"], "equipment": "barra" },
+
+  { "slug": "encolhimento-halteres", "name": "Encolhimento Halteres", "en": "Dumbbell Shrug", "aliases": ["shrug", "dumbbell shrug"], "primaryMuscle": "trapezio", "secondaryMuscles": [], "equipment": "halteres" },
+  { "slug": "encolhimento-barra", "name": "Encolhimento Barra", "en": "Barbell Shrug", "aliases": ["barbell shrug"], "primaryMuscle": "trapezio", "secondaryMuscles": [], "equipment": "barra" },
+
+  { "slug": "rosca-punho", "name": "Rosca de Punho", "en": "Palms-Up Barbell Wrist Curl Over A Bench", "aliases": ["wrist curl"], "primaryMuscle": "antebraco", "secondaryMuscles": [], "equipment": "barra" },
+
+  { "slug": "esteira", "name": "Esteira", "en": "Running, Treadmill", "aliases": ["treadmill", "corrida"], "primaryMuscle": "cardio", "secondaryMuscles": [], "equipment": "maquina" },
+  { "slug": "bicicleta", "name": "Bicicleta Ergometrica", "en": "Bicycling, Stationary", "aliases": ["stationary bike", "bike"], "primaryMuscle": "cardio", "secondaryMuscles": [], "equipment": "maquina" },
+  { "slug": "eliptico", "name": "Eliptico", "en": "Elliptical Trainer", "aliases": ["elliptical"], "primaryMuscle": "cardio", "secondaryMuscles": [], "equipment": "maquina" },
+
+  { "slug": "burpee", "name": "Burpee", "en": "Burpee", "aliases": ["burpees"], "primaryMuscle": "corpo-inteiro", "secondaryMuscles": [], "equipment": "peso-corporal" },
+  { "slug": "kettlebell-swing", "name": "Kettlebell Swing", "en": "One-Arm Kettlebell Swings", "aliases": ["kettlebell swing", "kb swing"], "primaryMuscle": "corpo-inteiro", "secondaryMuscles": ["gluteos", "posterior"], "equipment": "kettlebell" }
+]
