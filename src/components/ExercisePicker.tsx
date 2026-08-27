@@ -51,6 +51,7 @@ export function ExercisePicker({
       setQuery('');
       setFilter('all');
       setEquipment('all');
+      setEquipmentOpen(false);
     }
   }, [open]);
 
@@ -99,9 +100,19 @@ export function ExercisePicker({
 
   return (
     <>
-      <Sheet open={open} onClose={onClose} title={title} className={`sheet--picker ${multi ? 'sheet--picker-multi' : ''}`}>
+      <Sheet
+        open={open}
+        onClose={onClose}
+        title={title}
+        subtitle={multi ? 'Selecione vários exercícios e confirme de uma vez' : 'Toque no exercício para visualizar antes de escolher'}
+        className={`sheet--picker ${multi ? 'sheet--picker-multi' : ''}`}
+      >
         <div className="picker-layout">
           <div className="picker-toolbar">
+            <div className="picker-tip">
+              <span aria-hidden>▶</span>
+              <span>Toque na imagem ou no nome para ver execução, músculos e instruções.</span>
+            </div>
             <div className="picker-search">
               <span aria-hidden>⌕</span>
               <input
@@ -142,7 +153,7 @@ export function ExercisePicker({
                 <div className="picker-grid">{suggested.map((exercise) => renderRow(exercise, `suggested-${exercise.id}`))}</div>
               </section>
             )}
-            <div className="picker-result-head">
+            <div className="picker-result-head" aria-live="polite">
               <span>{filtered.length} exercícios</span>
               {selectedIds.length > 0 && <strong>{selectedIds.length} selecionado{selectedIds.length === 1 ? '' : 's'}</strong>}
             </div>
@@ -153,7 +164,7 @@ export function ExercisePicker({
         </div>
 
         {multi && (
-          <div className="picker-cta">
+          <div className="picker-cta" aria-live="polite">
             <span><strong>{selectedIds.length}</strong> exercício{selectedIds.length === 1 ? '' : 's'} selecionado{selectedIds.length === 1 ? '' : 's'}</span>
             <button className="btn btn--primary" disabled={!selectedIds.length} onClick={confirm}>
               ADICIONAR {selectedIds.length || ''} EXERCÍCIO{selectedIds.length === 1 ? '' : 'S'}
@@ -190,15 +201,18 @@ function ExerciseRow({
   return (
     <article className={`picker-card ${selected ? 'is-selected' : ''} ${existing ? 'is-existing' : ''}`}>
       <button className="picker-card__preview" onClick={onPreview} aria-label={`Visualizar ${exercise.name}`}>
-        <ExerciseThumb exercise={exercise} size={64} />
+        <span className="picker-thumb-wrap" aria-hidden>
+          <ExerciseThumb exercise={exercise} size={64} />
+          <span className="picker-thumb-play">▶</span>
+        </span>
         <span className="picker-card__copy">
           <strong>{favorite && <span className="picker-favorite">★ </span>}{exercise.name}</strong>
           <span>{MUSCLE_LABEL[exercise.primaryMuscle]}</span>
-          <small>{EQUIPMENT_LABEL[exercise.equipment]}{exercise.isCustom ? ' · Meu exercício' : ''}</small>
+          <small><b>Ver execução</b> · {EQUIPMENT_LABEL[exercise.equipment]}{exercise.isCustom ? ' · Meu exercício' : ''}</small>
         </span>
       </button>
       {existing ? (
-        <span className="picker-existing">Já está no treino</span>
+        <span className="picker-existing"><b>✓</b> No treino</span>
       ) : (
         <button
           className={`picker-select ${selected ? 'is-selected' : ''}`}

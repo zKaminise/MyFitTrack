@@ -65,8 +65,13 @@ http://localhost:5173/reset-password
 Apos o deploy, troque o Site URL para a URL principal da Vercel e adicione:
 
 ```text
-https://SEU-PROJETO.vercel.app/auth/callback
-https://SEU-PROJETO.vercel.app/reset-password
+Site URL: https://myfittrack.gabrielmisao.com.br
+
+Redirect URLs:
+https://myfit-track.vercel.app/auth/callback
+https://myfit-track.vercel.app/reset-password
+https://myfittrack.gabrielmisao.com.br/auth/callback
+https://myfittrack.gabrielmisao.com.br/reset-password
 ```
 
 ## 5. E-mail
@@ -113,6 +118,18 @@ VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
 5. Faça o deploy e depois complete as URLs de producao no Supabase.
+
+### Dominio definitivo
+
+Em **Vercel → Project → Settings → Domains**, adicione:
+
+```text
+myfittrack.gabrielmisao.com.br
+```
+
+Crie no provedor DNS exatamente o registro solicitado pela Vercel. Depois que o
+status ficar **Valid Configuration**, atualize o Site URL/redirects do Supabase e
+as origens autorizadas do Google conforme [AUTH_EMAIL_SETUP.md](AUTH_EMAIL_SETUP.md).
 
 ## 9. Smoke test real obrigatorio
 

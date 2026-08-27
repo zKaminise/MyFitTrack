@@ -15,15 +15,22 @@ Supabase OAuth callback: https://dhbyhqomhotfzvgvxerb.supabase.co/auth/v1/callba
 
 Em **Supabase Dashboard → Authentication → URL Configuration**:
 
-1. Defina **Site URL** como a URL principal e estável do deploy Vercel.
-2. Em **Redirect URLs**, adicione, trocando `URL-REAL-DA-VERCEL` pelo domínio que
-   aparece em Vercel → projeto MyFitTrack → Domains:
+1. Depois de vincular o domínio, defina **Site URL** como:
+
+```text
+https://myfittrack.gabrielmisao.com.br
+```
+
+2. Em **Redirect URLs**, mantenha localhost, o domínio Vercel atual e o domínio
+   definitivo:
 
 ```text
 http://localhost:5173/auth/callback
 http://localhost:5173/reset-password
-https://URL-REAL-DA-VERCEL/auth/callback
-https://URL-REAL-DA-VERCEL/reset-password
+https://myfit-track.vercel.app/auth/callback
+https://myfit-track.vercel.app/reset-password
+https://myfittrack.gabrielmisao.com.br/auth/callback
+https://myfittrack.gabrielmisao.com.br/reset-password
 ```
 
 Se o Vite escolher outra porta local, adicione essa origem/porta exata. O código
@@ -41,7 +48,8 @@ localhost por hardcode.
 
 ```text
 http://localhost:5173
-https://URL-REAL-DA-VERCEL
+https://myfit-track.vercel.app
+https://myfittrack.gabrielmisao.com.br
 ```
 
 7. Em **Authorized redirect URIs**, adicione exatamente:
@@ -105,7 +113,7 @@ invalidar links de confirmação.
 
 1. Abra a URL Vercel em janela anônima e cadastre um e-mail real.
 2. Confirme remetente, assunto e botão; clique uma vez.
-3. Verifique retorno em `https://URL-REAL-DA-VERCEL/auth/callback`, mensagem
+3. Verifique retorno em `https://myfittrack.gabrielmisao.com.br/auth/callback`, mensagem
    `E-mail confirmado` e sessão restaurada após reload.
 4. Reutilize ou expire um link e confirme a tela amigável de reenvio.
 5. Faça logout, use **Continuar com Google**, conclua o consentimento e confirme

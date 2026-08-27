@@ -6,12 +6,14 @@ export function Sheet({
   open,
   onClose,
   title,
+  subtitle,
   children,
   className = '',
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
+  subtitle?: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -28,8 +30,11 @@ export function Sheet({
       <div className={`sheet ${className}`} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
         {title && (
-          <div className="row-between" style={{ marginBottom: 12 }}>
-            <h3 style={{ fontSize: 20 }}>{title}</h3>
+          <div className="sheet-heading">
+            <div>
+              <h3>{title}</h3>
+              {subtitle && <p>{subtitle}</p>}
+            </div>
             <button className="icon-btn" onClick={onClose} aria-label="Fechar">
               ✕
             </button>

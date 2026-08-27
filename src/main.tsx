@@ -6,6 +6,7 @@ import './index.css';
 import { bootstrap } from './db/seed';
 import { useAuth } from './store/authStore';
 import { initSync } from './sync/engine';
+import { PwaUpdatePrompt } from './components/PwaUpdatePrompt';
 
 async function start() {
   // Dados globais (biblioteca oficial) — independem de conta.
@@ -18,6 +19,7 @@ async function start() {
     <React.StrictMode>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <App />
+        <PwaUpdatePrompt />
       </BrowserRouter>
     </React.StrictMode>,
   );

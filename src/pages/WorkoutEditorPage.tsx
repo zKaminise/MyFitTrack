@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useWorkout, useExerciseMap } from '@/hooks/useData';
 import { BackHeader } from '@/ui/PageHeader';
@@ -20,11 +20,13 @@ export default function WorkoutEditorPage() {
   const exMap = useExerciseMap();
   const [adding, setAdding] = useState(false);
   const [configFor, setConfigFor] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   if (!workout) return <div className="screen"><BackHeader title="Treino" /><p className="empty">Carregando...</p></div>;
 
   const update = (fn: (w: Workout) => Workout) => saveWorkout(fn(workout));
   const exercises = [...workout.exercises].sort((a, b) => a.order - b.order);
+  const totalSets = exercises.reduce((sum, exercise) => sum + exercise.sets, 0);
 
   const updateExercise = (weId: string, patch: Partial<WorkoutExercise>) =>
     update((w) => ({ ...w, exercises: w.exercises.map((e) => (e.id === weId ? { ...e, ...patch } : e)) }));
@@ -52,49 +54,102 @@ export default function WorkoutEditorPage() {
         }
       />
 
-      <div className="card stack" style={{ marginBottom: 14 }}>
-        <div className="field">
-          <label>Nome</label>
-          <input className="input" value={workout.name} onChange={(e) => update((w) => ({ ...w, name: e.target.value }))} />
+      <section
+        className="workout-editor-hero"
+        style={{ '--workout-accent': workout.color ?? '#ff7a1a' } as CSSProperties}
+      >
+        <div className="workout-editor-hero__top">
+          <span className="workout-editor-mark" aria-hidden>W</span>
+          <span className="workout-editor-kicker">MODELO DE TREINO</span>
+          <span className="workout-autosave">✓ Salvo automaticamente</span>
         </div>
-        <div className="field">
-          <label>Descricao (ex: Peito + Triceps)</label>
-          <input className="input" value={workout.description ?? ''} onChange={(e) => update((w) => ({ ...w, description: e.target.value }))} />
+        <input
+          className="workout-editor-name"
+          aria-label="Nome do treino"
+          value={workout.name}
+          placeholder="Nome do treino"
+          onChange={(event) => update((current) => ({ ...current, name: event.target.value }))}
+        />
+        <input
+          className="workout-editor-description"
+          aria-label="Descrição do treino"
+          value={workout.description ?? ''}
+          placeholder="Ex.: Peito + Tríceps"
+          onChange={(event) => update((current) => ({ ...current, description: event.target.value }))}
+        />
+        <div className="workout-editor-stats">
+          <span><strong>{exercises.length}</strong> exercícios</span>
+          <span><strong>{totalSets}</strong> séries</span>
+          <span><strong>{workout.estimatedMinutes ?? '—'}</strong> min</span>
         </div>
-        <div className="field">
-          <label>Cor</label>
-          <div className="row" style={{ gap: 8 }}>
-            {COLORS.map((c) => (
-              <button
-                key={c}
-                aria-label={`cor ${c}`}
-                onClick={() => update((w) => ({ ...w, color: c }))}
-                style={{
-                  width: 32, height: 32, borderRadius: 10, background: c,
-                  border: workout.color === c ? '3px solid var(--text)' : '2px solid var(--border)',
-                }}
-              />
-            ))}
+        <button className="workout-details-toggle" onClick={() => setDetailsOpen((value) => !value)} aria-expanded={detailsOpen}>
+          <span>Cor, duração e observações</span>
+          <b>{detailsOpen ? '−' : '+'}</b>
+        </button>
+      </section>
+
+      {detailsOpen && (
+        <section className="workout-editor-details" aria-label="Detalhes do treino">
+          <div className="field">
+            <label>Cor do treino</label>
+            <div className="workout-color-picker">
+              {COLORS.map((color) => (
+                <button
+                  key={color}
+                  className={workout.color === color ? 'is-active' : ''}
+                  aria-label={`Usar cor ${color}`}
+                  aria-pressed={workout.color === color}
+                  onClick={() => update((current) => ({ ...current, color }))}
+                  style={{ background: color }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="row" style={{ gap: 10 }}>
-          <div className="field grow">
-            <label>Duracao estimada (min)</label>
-            <input
-              className="input" type="number" inputMode="numeric"
-              value={workout.estimatedMinutes ?? ''}
-              onChange={(e) => update((w) => ({ ...w, estimatedMinutes: e.target.value === '' ? undefined : Number(e.target.value) }))}
+          <div className="field">
+            <label>Duração estimada</label>
+            <div className="workout-duration-input">
+              <input
+                className="input"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                value={workout.estimatedMinutes ?? ''}
+                placeholder="60"
+                onChange={(event) => update((current) => ({
+                  ...current,
+                  estimatedMinutes: event.target.value === '' ? undefined : Number(event.target.value),
+                }))}
+              />
+              <span>minutos</span>
+            </div>
+          </div>
+          <div className="field workout-details-notes">
+            <label>Observações</label>
+            <textarea
+              className="textarea"
+              value={workout.notes ?? ''}
+              placeholder="Detalhes gerais deste treino..."
+              onChange={(event) => update((current) => ({ ...current, notes: event.target.value }))}
             />
           </div>
-        </div>
-        <div className="field">
-          <label>Observacoes</label>
-          <textarea className="textarea" value={workout.notes ?? ''} onChange={(e) => update((w) => ({ ...w, notes: e.target.value }))} />
-        </div>
-      </div>
+        </section>
+      )}
 
-      <div className="section-title">Exercicios ({exercises.length})</div>
+      <div className="workout-list-heading">
+        <div>
+          <span>EXERCÍCIOS</span>
+          <h2>Sua sequência</h2>
+        </div>
+        <span className="pill">{exercises.length}</span>
+      </div>
       <div className="stack-sm">
+        {exercises.length === 0 && (
+          <div className="workout-editor-empty">
+            <span aria-hidden>+</span>
+            <h3>Monte seu treino</h3>
+            <p>Adicione exercícios e organize a ordem em que deseja executá-los.</p>
+          </div>
+        )}
         {exercises.map((we, i) => {
           const ex = exMap.get(we.exerciseId);
           const prevSuperset = i > 0 && exercises[i - 1].supersetId && exercises[i - 1].supersetId === we.supersetId;
@@ -125,15 +180,15 @@ export default function WorkoutEditorPage() {
         })}
       </div>
 
-      <button className="btn btn--primary btn--block" style={{ marginTop: 12 }} onClick={() => setAdding(true)}>
-        + Adicionar exercicio
+      <button className="btn btn--primary btn--block workout-add-button" onClick={() => setAdding(true)}>
+        <span aria-hidden>+</span> Adicionar exercícios
       </button>
 
       <ExercisePicker
         open={adding}
         onClose={() => setAdding(false)}
         multi
-        title="Adicionar exercicios"
+        title="Adicionar exercícios"
         existingIds={exercises.map((exercise) => exercise.exerciseId)}
         onConfirm={(selected) => {
           update((w) => ({
