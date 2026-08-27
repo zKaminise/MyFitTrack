@@ -7,11 +7,13 @@ export function Sheet({
   onClose,
   title,
   children,
+  className = '',
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
   children: ReactNode;
+  className?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -23,7 +25,7 @@ export function Sheet({
   if (!open) return null;
   return (
     <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+      <div className={`sheet ${className}`} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
         {title && (
           <div className="row-between" style={{ marginBottom: 12 }}>

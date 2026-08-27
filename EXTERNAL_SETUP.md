@@ -58,14 +58,14 @@ Durante desenvolvimento:
 ```text
 Site URL: http://localhost:5173
 Redirect URLs:
-http://localhost:5173/
+http://localhost:5173/auth/callback
 http://localhost:5173/reset-password
 ```
 
 Apos o deploy, troque o Site URL para a URL principal da Vercel e adicione:
 
 ```text
-https://SEU-PROJETO.vercel.app/
+https://SEU-PROJETO.vercel.app/auth/callback
 https://SEU-PROJETO.vercel.app/reset-password
 ```
 
@@ -73,7 +73,8 @@ https://SEU-PROJETO.vercel.app/reset-password
 
 Para QA inicial, a confirmacao de e-mail pode ser desativada em
 **Authentication → Providers → Email**. Antes do beta, decida/ative a confirmacao.
-O app ja possui estado "Verifique seu e-mail" e acao de reenvio.
+O app possui callback, estado de confirmacao e reenvio. Configuração detalhada de
+Google OAuth, Resend SMTP e templates: [AUTH_EMAIL_SETUP.md](AUTH_EMAIL_SETUP.md).
 
 ## 6. Excluir conta
 
@@ -87,14 +88,10 @@ As variaveis de sistema da function ficam no ambiente Supabase. Nenhuma service
 role vai para a PWA. A function aceita somente o JWT autenticado e deriva dele o
 usuario a excluir.
 
-## 7. Google Login (opcional/futuro)
+## 7. Google Login
 
-1. Crie Client ID/Secret no Google Cloud;
-2. habilite Google em **Authentication → Providers**;
-3. use o callback indicado pelo Supabase;
-4. mantenha localhost e Vercel na allowlist.
-
-O botao e o codigo ja estao preparados; e-mail/senha independe disso.
+Siga [AUTH_EMAIL_SETUP.md](AUTH_EMAIL_SETUP.md). O callback Google deste projeto
+é `https://dhbyhqomhotfzvgvxerb.supabase.co/auth/v1/callback`.
 
 ## 8. Vercel
 

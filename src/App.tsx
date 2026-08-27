@@ -24,6 +24,7 @@ import SessionPage from './pages/SessionPage';
 import OnboardingPage from './pages/OnboardingPage';
 import AccountPage from './pages/AccountPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import AuthCallbackPage from './pages/auth/AuthCallbackPage';
 
 function Splash() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
   if (loading) return <Splash />;
 
   if (location.pathname === '/reset-password') return <ResetPasswordPage />;
+  if (location.pathname === '/auth/callback') return <AuthCallbackPage />;
 
   if (!user) {
     return (

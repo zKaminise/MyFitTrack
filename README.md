@@ -91,4 +91,5 @@ novos backups usam `format: myfittrack`.
 - [DATA_MODEL.md](DATA_MODEL.md) — modelo local/cloud;
 - [PROJECT_STATUS.md](PROJECT_STATUS.md) — estado real do projeto;
 - [EXTERNAL_SETUP.md](EXTERNAL_SETUP.md) — Supabase e Vercel;
+- [AUTH_EMAIL_SETUP.md](AUTH_EMAIL_SETUP.md) — Google OAuth, callback, Resend SMTP e templates;
 - [THIRD_PARTY_MEDIA.md](THIRD_PARTY_MEDIA.md) — licencas de midia.

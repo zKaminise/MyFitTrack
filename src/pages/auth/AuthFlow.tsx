@@ -48,6 +48,7 @@ function ErrorBox({ msg }: { msg: string | null }) {
 function GoogleButton() {
   const { supportsGoogle, signInWithGoogle } = useAuth();
   const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   if (!supportsGoogle) return null;
   return (
     <>
@@ -55,15 +56,18 @@ function GoogleButton() {
       <button
         type="button"
         className="auth-btn auth-btn--google"
+        disabled={busy}
         onClick={async () => {
+          setBusy(true);
           try {
             await signInWithGoogle();
           } catch (e) {
             setErr(authErrorMessage(e));
+            setBusy(false);
           }
         }}
       >
-        <span style={{ fontWeight: 700 }}>G</span> Continuar com Google
+        {busy ? <span className="spinner" /> : <><span className="google-mark">G</span> Continuar com Google</>}
       </button>
       {err && <ErrorBox msg={err} />}
     </>
@@ -130,6 +134,8 @@ function SignupForm({ onView }: { onView: (v: View) => void }) {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [confirmSent, setConfirmSent] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -154,26 +160,37 @@ function SignupForm({ onView }: { onView: (v: View) => void }) {
   if (confirmSent) {
     return (
       <div className="auth-form auth-form--center">
-        <div style={{ fontSize: 44 }}>📧</div>
+        <div className="auth-email-icon">✉</div>
         <div className="auth-head">
-          <h1>Verifique seu e-mail</h1>
-          <p>Enviamos um link de confirmação para {email}. Confirme para acessar sua conta.</p>
+          <h1>Confira seu e-mail</h1>
+          <p>Enviamos um link de confirmação para:</p>
         </div>
+        <div className="auth-email-address">{email}</div>
+        <p className="muted auth-confirm-copy">Clique no link enviado para ativar sua conta.</p>
+        {resent && <div className="auth-inline-message auth-inline-message--success">✓ Novo link enviado com sucesso.</div>}
+        <ErrorBox msg={err} />
         <button
           className="auth-btn"
+          disabled={resending}
           onClick={async () => {
+            setResending(true);
+            setResent(false);
             try {
               await auth.resendConfirmation(email);
               setErr(null);
+              setResent(true);
             } catch (e) {
               setErr(authErrorMessage(e));
+            } finally {
+              setResending(false);
             }
           }}
         >
-          Reenviar e-mail
+          {resending ? <span className="spinner" /> : 'REENVIAR E-MAIL'}
         </button>
-        <ErrorBox msg={err} />
-        <button className="auth-link" onClick={() => onView('login')}>Voltar para entrar</button>
+        <button className="auth-link" onClick={() => { setConfirmSent(false); setEmail(''); setErr(null); setResent(false); }}>
+          Usei outro e-mail
+        </button>
       </div>
     );
   }

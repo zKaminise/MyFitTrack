@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { AuthError, type AuthProvider, type AuthUser, type SignUpResult } from './types';
 import type { User } from '@supabase/supabase-js';
+import { authCallbackUrl, googleOAuthOptions, resetPasswordUrl } from './redirects';
 
 function client() {
   if (!supabase) throw new AuthError('unknown', 'Supabase nao configurado');
@@ -43,14 +44,16 @@ export const supabaseAuthProvider: AuthProvider = {
 
   async getCurrentUser() {
     const { data } = await client().auth.getSession();
-    return mapUser(data.session?.user);
+    const user = mapUser(data.session?.user);
+    await upsertProfile(user);
+    return user;
   },
 
   async signUp(name, email, password): Promise<SignUpResult> {
     const { data, error } = await client().auth.signUp({
       email: email.trim().toLowerCase(),
       password,
-      options: { data: { name: name.trim() }, emailRedirectTo: `${window.location.origin}/` },
+      options: { data: { name: name.trim() }, emailRedirectTo: authCallbackUrl() },
     });
     if (error) throw mapError(error.message);
     const user = mapUser(data.user);
@@ -74,7 +77,7 @@ export const supabaseAuthProvider: AuthProvider = {
   async signInWithGoogle() {
     const { error } = await client().auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/` },
+      options: googleOAuthOptions(),
     });
     if (error) throw new AuthError('google_unavailable', error.message);
   },
@@ -85,7 +88,7 @@ export const supabaseAuthProvider: AuthProvider = {
 
   async resetPassword(email) {
     const { error } = await client().auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: resetPasswordUrl(),
     });
     if (error) throw mapError(error.message);
   },
@@ -94,7 +97,7 @@ export const supabaseAuthProvider: AuthProvider = {
     const { error } = await client().auth.resend({
       type: 'signup',
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${window.location.origin}/` },
+      options: { emailRedirectTo: authCallbackUrl() },
     });
     if (error) throw mapError(error.message);
   },

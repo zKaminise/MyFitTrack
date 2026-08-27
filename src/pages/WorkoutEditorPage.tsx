@@ -4,10 +4,11 @@ import { useWorkout, useExerciseMap } from '@/hooks/useData';
 import { BackHeader } from '@/ui/PageHeader';
 import { Sheet } from '@/ui/components';
 import { ExercisePicker } from '@/components/ExercisePicker';
+import { ExerciseThumb } from '@/components/ExerciseMedia';
 import { confirmAction, toast } from '@/ui/feedback';
 import type { Workout, WorkoutExercise, Exercise } from '@/domain/types';
 import { saveWorkout, duplicateWorkout, deleteWorkout, newWorkoutExercise } from '@/services/workoutService';
-import { SET_TYPE_LABEL, repRange } from '@/lib/labels';
+import { EQUIPMENT_LABEL, MUSCLE_LABEL, SET_TYPE_LABEL, repRange } from '@/lib/labels';
 import { uuid } from '@/lib/id';
 
 const COLORS = ['#ff7a1a', '#3aa0ff', '#37c871', '#f5c542', '#c77dff', '#ff5a7a'];
@@ -98,26 +99,27 @@ export default function WorkoutEditorPage() {
           const ex = exMap.get(we.exerciseId);
           const prevSuperset = i > 0 && exercises[i - 1].supersetId && exercises[i - 1].supersetId === we.supersetId;
           return (
-            <div key={we.id} className="card" style={prevSuperset ? { borderColor: 'var(--accent)' } : undefined}>
-              <div className="row-between">
-                <div className="grow">
+            <div key={we.id} className={`workout-exercise-card ${prevSuperset ? 'is-superset' : ''}`}>
+              <div className="workout-exercise-handle" aria-hidden>≡</div>
+              {ex && <ExerciseThumb exercise={ex} size={58} />}
+              <button className="workout-exercise-main" onClick={() => setConfigFor(we.id)}>
                   <div className="row" style={{ gap: 6 }}>
-                    <strong>{i + 1}. {ex?.name ?? 'Exercicio'}</strong>
+                    <strong><span className="workout-exercise-order">{i + 1}</span>{ex?.name ?? 'Exercício'}</strong>
                     {we.supersetId && <span className="pill pill--accent">superset</span>}
                   </div>
-                  <span className="muted" style={{ fontSize: 13 }}>
-                    {we.sets} × {repRange(we.repMin, we.repMax)} · {we.restSeconds}s · {SET_TYPE_LABEL[we.setType]}
+                  {ex && <span className="workout-exercise-meta">{MUSCLE_LABEL[ex.primaryMuscle]} · {EQUIPMENT_LABEL[ex.equipment]}</span>}
+                  <span className="workout-exercise-plan">
+                    <b>{we.sets} × {repRange(we.repMin, we.repMax)}</b><i />{we.restSeconds}s<i />{SET_TYPE_LABEL[we.setType]}
                     {we.targetRir != null ? ` · ${we.targetRir} RIR` : ''}
                     {we.targetRpe != null ? ` · RPE ${we.targetRpe}` : ''}
                   </span>
                   {we.notes && <div className="faint" style={{ fontSize: 12, marginTop: 3 }}>📝 {we.notes}</div>}
-                </div>
-                <div className="row" style={{ gap: 2 }}>
+              </button>
+                <div className="workout-exercise-actions">
                   <button className="icon-btn" onClick={() => move(we.id, -1)} aria-label="Subir">↑</button>
                   <button className="icon-btn" onClick={() => move(we.id, 1)} aria-label="Descer">↓</button>
-                  <button className="icon-btn" onClick={() => setConfigFor(we.id)} aria-label="Configurar">⚙</button>
+                  <button className="icon-btn" onClick={() => setConfigFor(we.id)} aria-label="Configurar">⋮</button>
                 </div>
-              </div>
             </div>
           );
         })}
@@ -132,9 +134,17 @@ export default function WorkoutEditorPage() {
         onClose={() => setAdding(false)}
         multi
         title="Adicionar exercicios"
-        onPick={(exercise) => {
-          update((w) => ({ ...w, exercises: [...w.exercises, newWorkoutExercise(exercise.id, w.exercises.length)] }));
-          toast(`${exercise.name} adicionado`);
+        existingIds={exercises.map((exercise) => exercise.exerciseId)}
+        onConfirm={(selected) => {
+          update((w) => ({
+            ...w,
+            exercises: [
+              ...w.exercises,
+              ...selected.map((exercise, index) => newWorkoutExercise(exercise.id, w.exercises.length + index)),
+            ],
+          }));
+          setAdding(false);
+          toast(`✓ ${selected.length} exercício${selected.length === 1 ? '' : 's'} adicionado${selected.length === 1 ? '' : 's'}`);
         }}
       />
 
@@ -145,7 +155,7 @@ export default function WorkoutEditorPage() {
           index={exercises.findIndex((e) => e.id === configExercise.id)}
           exercises={exercises}
           onClose={() => setConfigFor(null)}
-          onChange={(patch) => updateExercise(configExercise.id, patch)}
+          onSave={(patch) => updateExercise(configExercise.id, patch)}
           onRemove={() => { removeExercise(configExercise.id); setConfigFor(null); }}
           onSubstitutePermanent={(newEx) => {
             updateExercise(configExercise.id, { exerciseId: newEx.id });
@@ -185,33 +195,63 @@ export default function WorkoutEditorPage() {
 }
 
 function ExerciseConfigSheet({
-  we, exercise, index, exercises, onClose, onChange, onRemove, onSubstitutePermanent, onToggleSuperset,
+  we, exercise, index, exercises, onClose, onSave, onRemove, onSubstitutePermanent, onToggleSuperset,
 }: {
   we: WorkoutExercise;
   exercise: Exercise | undefined;
   index: number;
   exercises: WorkoutExercise[];
   onClose: () => void;
-  onChange: (patch: Partial<WorkoutExercise>) => void;
+  onSave: (patch: Partial<WorkoutExercise>) => void;
   onRemove: () => void;
   onSubstitutePermanent: (ex: Exercise) => void;
   onToggleSuperset: () => void;
 }) {
   const [subOpen, setSubOpen] = useState(false);
+  const [draft, setDraft] = useState<WorkoutExercise>(we);
   const next = exercises[index + 1];
   const grouped = !!we.supersetId && we.supersetId === next?.supersetId;
+  const patchDraft = (patch: Partial<WorkoutExercise>) => setDraft((current) => ({ ...current, ...patch }));
+  const save = () => {
+    const repMin = Math.max(1, draft.repMin);
+    const repMax = Math.max(repMin, draft.repMax);
+    onSave({ ...draft, repMin, repMax });
+    toast('✓ Alterações salvas');
+    onClose();
+  };
   return (
-    <Sheet open onClose={onClose} title={exercise?.name ?? 'Configurar'}>
-      <div className="row" style={{ gap: 10 }}>
-        <NumberField label="Series" value={we.sets} min={1} onChange={(v) => onChange({ sets: v })} />
-        <NumberField label="Rep min" value={we.repMin} min={1} onChange={(v) => onChange({ repMin: v })} />
-        <NumberField label="Rep max" value={we.repMax} min={we.repMin} onChange={(v) => onChange({ repMax: v })} />
+    <Sheet open onClose={onClose} title="Configurar exercício" className="sheet--exercise-config">
+      {exercise && (
+        <div className="config-exercise-head">
+          <ExerciseThumb exercise={exercise} size={68} />
+          <div><h3>{exercise.name}</h3><p>{MUSCLE_LABEL[exercise.primaryMuscle]} · {EQUIPMENT_LABEL[exercise.equipment]}</p></div>
+        </div>
+      )}
+      <div className="config-block">
+        <label>Séries</label>
+        <Stepper value={draft.sets} min={1} max={20} onChange={(sets) => patchDraft({ sets })} />
       </div>
-      <div className="row" style={{ gap: 10, marginTop: 10 }}>
-        <NumberField label="Descanso (s)" value={we.restSeconds} min={0} step={15} onChange={(v) => onChange({ restSeconds: v })} />
+      <div className="config-block">
+        <label>Repetições</label>
+        <div className="rep-range-editor">
+          <NumberField label="Mínimo" value={draft.repMin} min={1} onChange={(repMin) => patchDraft({ repMin })} />
+          <span>até</span>
+          <NumberField label="Máximo" value={draft.repMax} min={draft.repMin} onChange={(repMax) => patchDraft({ repMax })} />
+        </div>
+      </div>
+      <div className="config-block">
+        <label>Descanso</label>
+        <div className="rest-presets">
+          {[60, 90, 120, 180].map((seconds) => (
+            <button key={seconds} className={draft.restSeconds === seconds ? 'active' : ''} onClick={() => patchDraft({ restSeconds: seconds })}>{seconds}s</button>
+          ))}
+        </div>
+        <NumberField label="Personalizado (segundos)" value={draft.restSeconds} min={0} step={15} onChange={(restSeconds) => patchDraft({ restSeconds })} />
+      </div>
+      <div className="row" style={{ gap: 10, marginTop: 14 }}>
         <div className="field grow">
           <label>Tipo</label>
-          <select className="select" value={we.setType} onChange={(e) => onChange({ setType: e.target.value as WorkoutExercise['setType'] })}>
+          <select className="select" value={draft.setType} onChange={(e) => patchDraft({ setType: e.target.value as WorkoutExercise['setType'] })}>
             {Object.entries(SET_TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
@@ -219,22 +259,23 @@ function ExerciseConfigSheet({
       <div className="row" style={{ gap: 10, marginTop: 10 }}>
         <div className="field grow">
           <label>RIR alvo (opcional)</label>
-          <input className="input" type="number" inputMode="numeric" value={we.targetRir ?? ''} placeholder="—"
-            onChange={(e) => onChange({ targetRir: e.target.value === '' ? null : Number(e.target.value) })} />
+          <input className="input" type="number" inputMode="numeric" value={draft.targetRir ?? ''} placeholder="—"
+            onChange={(e) => patchDraft({ targetRir: e.target.value === '' ? null : Number(e.target.value) })} />
         </div>
         <div className="field grow">
           <label>RPE alvo (opcional)</label>
-          <input className="input" type="number" inputMode="decimal" value={we.targetRpe ?? ''} placeholder="—"
-            onChange={(e) => onChange({ targetRpe: e.target.value === '' ? null : Number(e.target.value) })} />
+          <input className="input" type="number" inputMode="decimal" value={draft.targetRpe ?? ''} placeholder="—"
+            onChange={(e) => patchDraft({ targetRpe: e.target.value === '' ? null : Number(e.target.value) })} />
         </div>
       </div>
       <div className="field" style={{ marginTop: 10 }}>
         <label>Observacao do exercicio</label>
-        <input className="input" value={we.notes ?? ''} placeholder="Ex: banco posicao 3, pegada neutra..."
-          onChange={(e) => onChange({ notes: e.target.value })} />
+        <input className="input" value={draft.notes ?? ''} placeholder="Ex: banco posição 3, pegada neutra..."
+          onChange={(e) => patchDraft({ notes: e.target.value })} />
       </div>
 
       <div className="stack-sm" style={{ marginTop: 16 }}>
+        <button className="btn btn--primary btn--block" onClick={save}>SALVAR ALTERAÇÕES</button>
         {next && (
           <button className="btn btn--block" onClick={onToggleSuperset}>
             {grouped ? 'Desfazer superset' : '⛓ Agrupar com o proximo (superset)'}
@@ -263,6 +304,16 @@ function NumberField({ label, value, onChange, min, step = 1 }: { label: string;
         onChange={(e) => { const v = Number(e.target.value); onChange(min != null ? Math.max(min, v) : v); }}
         step={step}
       />
+    </div>
+  );
+}
+
+function Stepper({ value, min, max, onChange }: { value: number; min: number; max: number; onChange: (value: number) => void }) {
+  return (
+    <div className="stepper">
+      <button onClick={() => onChange(Math.max(min, value - 1))} disabled={value <= min} aria-label="Diminuir">−</button>
+      <strong>{value}</strong>
+      <button onClick={() => onChange(Math.min(max, value + 1))} disabled={value >= max} aria-label="Aumentar">+</button>
     </div>
   );
 }
