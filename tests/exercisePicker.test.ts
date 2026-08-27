@@ -7,13 +7,20 @@ import {
   toggleExerciseSelection,
 } from '@/components/exercisePickerModel';
 
-function exercise(id: string, name: string, primaryMuscle: Exercise['primaryMuscle'], equipment: Exercise['equipment'], aliases: string[] = []): Exercise {
+function exercise(
+  id: string,
+  name: string,
+  primaryMuscle: Exercise['primaryMuscle'],
+  equipment: Exercise['equipment'],
+  aliases: string[] = [],
+  secondaryMuscles: Exercise['secondaryMuscles'] = [],
+): Exercise {
   return {
     id,
     name,
     aliases,
     primaryMuscle,
-    secondaryMuscles: [],
+    secondaryMuscles,
     equipment,
     isCustom: false,
     isFavorite: false,
@@ -24,7 +31,7 @@ function exercise(id: string, name: string, primaryMuscle: Exercise['primaryMusc
 }
 
 const library = [
-  exercise('bench', 'Supino Reto com Barra', 'peito', 'barra', ['barbell bench press']),
+  exercise('bench', 'Supino Reto com Barra', 'peito', 'barra', ['barbell bench press'], ['triceps', 'ombros']),
   exercise('incline', 'Supino Inclinado com Halteres', 'peito', 'halteres'),
   exercise('rope', 'Tríceps Corda', 'triceps', 'polia'),
 ];
@@ -49,6 +56,12 @@ describe('modelo do seletor de exercicios', () => {
     const selected = ['bench'];
     expect(filterExercises(library, { query: '', category: 'peito', equipment: 'halteres' }, () => false).map((item) => item.id)).toEqual(['incline']);
     expect(selected).toEqual(['bench']);
+  });
+
+  it('considera somente o musculo principal nos chips de categoria', () => {
+    expect(filterExercises(library, { query: '', category: 'triceps', equipment: 'all' }, () => false).map((item) => item.id)).toEqual(['rope']);
+    // O supino usa triceps como secundario, mas pertence ao filtro Peito.
+    expect(filterExercises(library, { query: '', category: 'peito', equipment: 'all' }, () => false).map((item) => item.id)).toEqual(['incline', 'bench']);
   });
 
   it('filtra favoritos e detecta duplicidade no treino', () => {

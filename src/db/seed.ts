@@ -57,9 +57,13 @@ function buildMedia(slug: string): ExerciseMedia {
 }
 
 function buildInstructions(slug: string): string[] | undefined {
-  if (INSTRUCTIONS_PT[slug]) return INSTRUCTIONS_PT[slug];
-  const e = EXERCISE_ENRICHMENT[slug];
-  return e && e.instructionsEn.length ? e.instructionsEn : undefined;
+  return INSTRUCTIONS_PT[slug];
+}
+
+function sameInstructions(current?: string[], next?: string[]): boolean {
+  if (current === next) return true;
+  if (!current || !next || current.length !== next.length) return false;
+  return current.every((step, index) => step === next[index]);
 }
 
 /** Aplica os campos enriquecidos a um exercicio da biblioteca (nao custom). */
@@ -101,7 +105,7 @@ export async function ensureLibrary(): Promise<Map<string, string>> {
           !found.media ||
           found.media.remoteUrl !== enriched.media?.remoteUrl ||
           (found.aliases?.length ?? 0) !== enriched.aliases.length ||
-          !found.instructionsList
+          !sameInstructions(found.instructionsList, enriched.instructionsList)
         ) {
           toUpdate.push(enriched);
         }

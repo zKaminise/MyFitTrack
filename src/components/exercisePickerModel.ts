@@ -28,7 +28,9 @@ export function filterExercises(
       if (filters.category === 'fav') return isFav(exercise.id);
       if (filters.category === 'custom') return exercise.isCustom;
       if (filters.category !== 'all') {
-        return exercise.primaryMuscle === filters.category || exercise.secondaryMuscles.includes(filters.category);
+        // Os chips representam o grupo principal. Músculos secundários continuam
+        // disponíveis na busca textual, mas não ampliam o resultado do filtro.
+        return exercise.primaryMuscle === filters.category;
       }
       return true;
     })

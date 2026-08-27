@@ -4,12 +4,22 @@ import { db } from '@/db/database';
 import { ensureLibrary } from '@/db/seed';
 import { nowISO } from '@/lib/id';
 import type { Exercise } from '@/domain/types';
+import { EXERCISE_LIBRARY } from '@/data/exerciseLibrary';
+import { INSTRUCTIONS_PT } from '@/data/instructionsPt';
 
 beforeEach(async () => {
   await db.exercises.clear();
 });
 
 describe('biblioteca visual: enriquecimento e migracao', () => {
+  it('possui instrucoes locais em portugues para toda a biblioteca oficial', () => {
+    expect(Object.keys(INSTRUCTIONS_PT)).toHaveLength(EXERCISE_LIBRARY.length);
+    for (const seed of EXERCISE_LIBRARY) {
+      expect(INSTRUCTIONS_PT[seed.slug], seed.name).toBeDefined();
+      expect(INSTRUCTIONS_PT[seed.slug].length, seed.name).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   it('enriquece exercicios da biblioteca com midia e aliases em ingles', async () => {
     await ensureLibrary();
     const supino = (await db.exercises.toArray()).find((e) => e.name === 'Supino Reto Barra')!;
@@ -25,6 +35,7 @@ describe('biblioteca visual: enriquecimento e migracao', () => {
       id: 'legacy-1', createdAt: nowISO(), updatedAt: nowISO(),
       name: 'Supino Reto Barra', aliases: [], primaryMuscle: 'peito',
       secondaryMuscles: ['triceps', 'ombros'], equipment: 'barra',
+      instructionsList: ['Lie back on a flat bench.'],
       isCustom: false, isFavorite: true, alternativeIds: ['other-id'],
     };
     await db.exercises.put(legacy);
@@ -34,6 +45,7 @@ describe('biblioteca visual: enriquecimento e migracao', () => {
     expect(migrated!.media?.type).toBe('image');
     expect(migrated!.isFavorite).toBe(true);
     expect(migrated!.alternativeIds).toEqual(['other-id']);
+    expect(migrated!.instructionsList).toEqual(INSTRUCTIONS_PT['supino-reto-barra']);
     // Nao deve duplicar o exercicio.
     const dupes = (await db.exercises.toArray()).filter((e) => e.name === 'Supino Reto Barra');
     expect(dupes.length).toBe(1);
