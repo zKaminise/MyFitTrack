@@ -87,6 +87,13 @@ atomica e evitando historico parcialmente sincronizado.
 | Custom exercises | ✅ | ✅ |
 | Settings + favorites | ✅ | ✅ |
 | Biblioteca oficial | ✅ | — |
+| Schedule overrides | ✅ | ✅ |
+| Nutrition settings | ✅ | ✅ |
+| User foods | ✅ | ✅ |
+| Saved meals | ✅ | ✅ |
+| Nutrition days/logs | ✅ | ✅ |
+
+Alimentação segue a mesma escrita local-first: cada alteração atualiza primeiro o agregado diário no IndexedDB e entra na fila de sync. Itens consumidos guardam snapshot de nutrientes; mudanças no provider ou na refeição salva não reconstroem o histórico. O catálogo externo passa por `NutritionProvider` e a Edge Function `nutrition-search`, enquanto o cache de resultados é local e continua útil offline.
 
 ## Exclusao de conta
 

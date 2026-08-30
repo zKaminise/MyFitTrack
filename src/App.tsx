@@ -25,6 +25,9 @@ import OnboardingPage from './pages/OnboardingPage';
 import AccountPage from './pages/AccountPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import AuthCallbackPage from './pages/auth/AuthCallbackPage';
+import NutritionPage from './pages/NutritionPage';
+import NutritionSettingsPage from './pages/NutritionSettingsPage';
+import SavedMealsPage from './pages/SavedMealsPage';
 
 function Splash() {
   return (
@@ -100,6 +103,9 @@ function AuthedApp() {
           <Route path="/workouts" element={<WorkoutsPage />} />
           <Route path="/workouts/:id" element={<WorkoutEditorPage />} />
           <Route path="/history" element={<HistoryPage />} />
+          <Route path="/nutrition" element={<NutritionPage />} />
+          <Route path="/nutrition/settings" element={<NutritionSettingsPage />} />
+          <Route path="/nutrition/meals" element={<SavedMealsPage />} />
           <Route path="/history/:id" element={<SessionDetailPage />} />
           <Route path="/more" element={<MorePage />} />
           <Route path="/account" element={<AccountPage />} />

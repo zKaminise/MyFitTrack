@@ -16,19 +16,23 @@
   progressao, PR, streak, graficos, biblioteca visual e midia offline;
 - layouts mobile/desktop, sidebar, bottom navigation, loading e estados vazios;
 - Vercel SPA/PWA configurado.
+- calendario flexivel com treino extra, replace, swap, restauracao e snapshot planejado/realizado;
+- Alimentacao local-first: metas, slots, planejado/consumido, alimentos manuais,
+  busca Open Food Facts, cache offline, refeicoes salvas, totais e media recente;
+- sync/RLS/backup para schedule overrides e agregados nutricionais.
 
 ## NEEDS EXTERNAL CONFIGURATION
 
 - criar o projeto Supabase dedicado `myfittrack`;
 - fornecer `Project URL`, `Publishable Key` e `Project Ref`;
-- aplicar `0001_init.sql`, `0002_rls.sql`, `0003_sync_integrity.sql`;
+- aplicar as novas migrations `0004_schedule_overrides.sql` e `0005_nutrition.sql`;
 - configurar Auth Site URL/Redirect URLs;
-- deploy da function `delete-account`;
+- deploy da nova function `nutrition-search` (alem de `delete-account`);
 - executar smoke test real de RLS, dois clientes, offline→reconnect e cross-device;
 - configurar as duas env vars na Vercel e fazer o deploy.
 
-O codigo de cloud esta pronto, mas o status correto enquanto as credenciais nao
-existem e: **CODE READY — LIVE TEST PENDING**.
+O cloud anterior está configurado; as duas novas migrations e a nova Edge Function
+ainda precisam ser publicadas antes do smoke test desta rodada: **CODE READY — NEW CLOUD MIGRATIONS PENDING**.
 
 ## FUTURE
 
@@ -36,5 +40,10 @@ existem e: **CODE READY — LIVE TEST PENDING**.
 - decidir/ativar confirmacao de e-mail antes do beta;
 - push notifications, somente se houver necessidade real.
 
-Fora de escopo de forma intencional: feed, seguidores, clubes, dieta, pagamentos,
+## PARTIAL
+
+- smoke test real das migrations, RLS e sync em duas contas depende do deploy no Supabase;
+- QA autenticado das novas telas em 375/390/430/1440 depende de uma sessao de teste; o login publico foi validado sem overflow.
+
+Fora de escopo de forma intencional: feed, seguidores, clubes, pagamentos,
 IA, chat, rankings e integracoes sociais.

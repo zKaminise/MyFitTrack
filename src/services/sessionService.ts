@@ -45,6 +45,11 @@ export interface BuildSessionArgs {
   program: Program | null;
   periodWeek: PeriodizationWeek | null;
   allSessions: Session[];
+  scheduledWorkoutId?: string | null;
+  scheduledWorkoutName?: string | null;
+  date?: string;
+  scheduleSource?: Session['scheduleSource'];
+  scheduleOverrideId?: string | null;
 }
 
 /** Aplica a periodizacao ao WorkoutExercise, se houver. */
@@ -94,11 +99,16 @@ export function buildSession(args: BuildSessionArgs): Session {
     updatedAt: nowISO(),
     userId: getCurrentUserId(),
     workoutId: workout.id,
+    scheduledWorkoutId: args.scheduledWorkoutId ?? workout.id,
+    scheduledWorkoutName: args.scheduledWorkoutName ?? workout.name,
+    performedWorkoutId: workout.id,
+    scheduleSource: args.scheduleSource ?? 'scheduled',
+    scheduleOverrideId: args.scheduleOverrideId ?? null,
     workoutName: workout.name,
     workoutDescription: workout.description,
     programId: program?.id ?? null,
     scheduleType: program?.scheduleType,
-    date: todayISO(),
+    date: args.date ?? todayISO(),
     startedAt: nowISO(),
     endedAt: null,
     status: 'active',

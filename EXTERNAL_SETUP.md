@@ -133,6 +133,21 @@ as origens autorizadas do Google conforme [AUTH_EMAIL_SETUP.md](AUTH_EMAIL_SETUP
 
 ## 9. Smoke test real obrigatorio
 
+## 9. Calendario flexivel e alimentacao
+
+Depois de atualizar o repositorio, aplique as novas migrations sem editar as anteriores:
+
+```bash
+npx supabase db push
+npx supabase functions deploy nutrition-search
+```
+
+As migrations `0004_schedule_overrides.sql` e `0005_nutrition.sql` criam os agregados privados e as policies RLS. A busca usa Open Food Facts e não exige chave adicional. A função exige o JWT da conta, valida a busca e identifica o aplicativo perante o provider. Confirme no painel do Supabase que as duas migrations aparecem como aplicadas antes de testar sincronização entre dispositivos.
+
+Teste de segurança: entre com duas contas diferentes e confirme que cada uma recebe somente seus overrides, metas, alimentos, refeições e dias alimentares. Não configure service role na Vercel.
+
+## 10. Smoke test real obrigatorio
+
 Depois de conectar o projeto:
 
 - Conta A cria Treino A/B/C e sincroniza;

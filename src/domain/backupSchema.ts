@@ -111,6 +111,11 @@ export const backupSchema = z.object({
   periodizations: z.array(periodization),
   sessions: z.array(session),
   personalRecords: z.array(z.object({ ...meta }).passthrough()),
+  scheduleOverrides: z.array(z.object({ ...meta }).passthrough()).default([]),
+  nutritionSettings: z.array(z.object({ ...meta }).passthrough()).default([]),
+  userFoods: z.array(z.object({ ...meta }).passthrough()).default([]),
+  savedMeals: z.array(z.object({ ...meta }).passthrough()).default([]),
+  nutritionDays: z.array(z.object({ ...meta }).passthrough()).default([]),
 });
 
 export interface BackupSummary {

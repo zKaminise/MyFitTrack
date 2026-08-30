@@ -1,23 +1,29 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WeekCalendar } from '@/components/WeekCalendar';
+import { CycleAdjustmentSheet } from '@/components/CycleAdjustmentSheet';
+import { ScheduleEditSheet, WorkoutChoiceSheet } from '@/components/ScheduleActionSheet';
 import {
   useActiveProgram,
   useWorkouts,
   useSessions,
   useExerciseMap,
   usePeriodization,
+  useScheduleOverrides,
 } from '@/hooks/useData';
-import { resolveDay, nextTrainingDay } from '@/domain/scheduling';
+import { resolveDay, nextTrainingDay, repositionCycle } from '@/domain/scheduling';
+import { resolveSchedule } from '@/domain/scheduleOverrides';
 import { currentPeriodizationWeek } from '@/domain/periodization';
 import { todayISO, relativeDays, shortDate, longDate, weekdayLabel, weekday } from '@/domain/dates';
-import type { Workout } from '@/domain/types';
+import type { Exercise, Workout } from '@/domain/types';
 import { useSession } from '@/store/sessionStore';
 import { buildSession } from '@/services/sessionService';
-import { confirmAction } from '@/ui/feedback';
+import { confirmAction, toast } from '@/ui/feedback';
 import { repRange, formatMinutes } from '@/lib/labels';
-import type { Exercise } from '@/domain/types';
 import { useAuth } from '@/store/authStore';
+import { programRepo } from '@/repositories/dexie';
+import { nowISO, uuid } from '@/lib/id';
+import { replaceScheduleDay, restoreScheduleDay, swapScheduleDays } from '@/services/scheduleOverrideService';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -34,15 +40,20 @@ export default function TodayPage() {
   const sessions = useSessions() ?? [];
   const exMap = useExerciseMap();
   const periodization = usePeriodization(program?.periodizationId);
+  const overrides = useScheduleOverrides() ?? [];
   const active = useSession((s) => s.active);
   const start = useSession((s) => s.start);
 
   const today = todayISO();
   const [selected, setSelected] = useState(today);
+  const [adjustingCycle, setAdjustingCycle] = useState(false);
+  const [choosingWorkout, setChoosingWorkout] = useState(false);
+  const [editingDay, setEditingDay] = useState(false);
 
   const workoutById = new Map(workouts.map((w) => [w.id, w]));
-  const resolution = program ? resolveDay(program, selected) : null;
-  const selectedWorkout = resolution?.workoutId ? workoutById.get(resolution.workoutId) : null;
+  const resolution = program ? resolveSchedule(program, selected, overrides) : null;
+  const baseResolution = program ? resolveDay(program, selected) : null;
+  const selectedWorkout = resolution?.effectiveWorkoutId ? workoutById.get(resolution.effectiveWorkoutId) : null;
 
   const periodWeek =
     program && periodization
@@ -52,7 +63,7 @@ export default function TodayPage() {
   const lastDoneFor = (workoutId: string) =>
     sessions.find((s) => s.status === 'completed' && s.workoutId === workoutId)?.date ?? null;
 
-  async function handleStart(workout: Workout) {
+  async function handleStart(workout: Workout, forceExtra = false) {
     if (active) {
       const cont = await confirmAction({
         title: 'Ja existe um treino em andamento',
@@ -72,13 +83,58 @@ export default function TodayPage() {
       program: program ?? null,
       periodWeek,
       allSessions: sessions,
+      scheduledWorkoutId: resolution?.effectiveWorkoutId ?? null,
+      scheduledWorkoutName: labelFor(resolution?.effectiveWorkoutId),
+      date: selected,
+      scheduleSource: forceExtra || workout.id !== resolution?.effectiveWorkoutId ? 'extra' : (resolution?.override ? (resolution.override.type === 'swap' ? 'swap' : 'override') : 'scheduled'),
+      scheduleOverrideId: resolution?.override?.id ?? null,
     });
     await start(session);
     nav('/session');
   }
 
+  async function handleCycleAdjustment(cycleIndex: number) {
+    if (!program || program.scheduleType !== 'cycle') return;
+    const items = [...program.cycleItems].sort((a, b) => a.order - b.order);
+    const chosen = items[cycleIndex];
+    if (!chosen) return;
+    const nameFor = (workoutId: string | null) =>
+      workoutId ? workoutById.get(workoutId)?.name ?? 'Treino removido' : 'Descanso';
+    const newSequence = items
+      .map((_, step) => nameFor(items[(cycleIndex + step) % items.length].workoutId))
+      .join(' → ');
+    const confirmed = await confirmAction({
+      title: `Começar hoje com ${nameFor(chosen.workoutId)}?`,
+      message: `A partir de hoje: ${newSequence}. Os dias anteriores e seu histórico continuarão iguais.`,
+      confirmLabel: 'Ajustar ciclo',
+      cancelLabel: 'Cancelar',
+    });
+    if (!confirmed) return;
+
+    const adjusted = repositionCycle(program, today, cycleIndex, uuid(), nowISO());
+    await programRepo.put({ ...adjusted, updatedAt: nowISO() });
+    setSelected(today);
+    setAdjustingCycle(false);
+    toast(`✓ Hoje agora é ${nameFor(chosen.workoutId)}`);
+  }
+
   const isToday = selected === today;
   const sessionOnSelected = sessions.find((s) => s.date === selected && s.status === 'completed');
+  const sessionsOnSelected = sessions.filter((s) => s.date === selected && s.status === 'completed');
+  const labelFor = (id: string | null | undefined) => id ? workoutById.get(id)?.name ?? 'Treino removido' : 'Descanso';
+
+  async function replaceDay(workoutId: string | null) {
+    if (!program) return;
+    await replaceScheduleDay(program, selected, workoutId); setEditingDay(false); toast('✓ Dia ajustado');
+  }
+  async function swapDay(otherDate: string) {
+    if (!program) return;
+    await swapScheduleDays(program, selected, otherDate); setEditingDay(false); toast('✓ Os dias foram trocados');
+  }
+  async function restoreDay() {
+    if (!resolution?.override) return;
+    await restoreScheduleDay(resolution.override); setEditingDay(false); toast('Programação original restaurada');
+  }
 
   return (
     <div className="screen">
@@ -91,7 +147,7 @@ export default function TodayPage() {
       </div>
 
       <div style={{ margin: '14px 0 18px' }}>
-        <WeekCalendar program={program ?? null} sessions={sessions} selected={selected} onSelect={setSelected} />
+        <WeekCalendar program={program ?? null} sessions={sessions} overrides={overrides} selected={selected} onSelect={(date) => { setSelected(date); if (date !== today) setEditingDay(true); }} />
       </div>
 
       {active && isToday && (
@@ -132,11 +188,22 @@ export default function TodayPage() {
           periodWeekName={periodWeek?.name ?? null}
           isToday={isToday}
           onStart={() => handleStart(selectedWorkout)}
+          onOther={() => setChoosingWorkout(true)}
+          onEditDay={() => setEditingDay(true)}
+          onAdjustCycle={program.scheduleType === 'cycle' && isToday ? () => setAdjustingCycle(true) : undefined}
         />
       )}
 
       {program && !program.paused && !active && resolution?.isRest && (
-        <RestCard program={program} workoutById={workoutById} selected={selected} isToday={isToday} />
+        <RestCard
+          program={program}
+          workoutById={workoutById}
+          selected={selected}
+          isToday={isToday}
+          onAdjustCycle={program.scheduleType === 'cycle' && isToday ? () => setAdjustingCycle(true) : undefined}
+          onTrain={() => setChoosingWorkout(true)}
+          onEditDay={() => setEditingDay(true)}
+        />
       )}
 
       {!isToday && sessionOnSelected && (
@@ -153,6 +220,21 @@ export default function TodayPage() {
           <span className="faint">›</span>
         </button>
       )}
+      {sessionsOnSelected.length > 1 && <p className="faint" style={{textAlign:'center'}}>{sessionsOnSelected.length} sessões realizadas neste dia</p>}
+
+      <WorkoutChoiceSheet open={choosingWorkout} title="Qual treino você quer fazer?" workouts={workouts} onClose={() => setChoosingWorkout(false)} onChoose={(w) => { setChoosingWorkout(false); void handleStart(w, w.id !== resolution?.effectiveWorkoutId); }} />
+      {program && <ScheduleEditSheet open={editingDay} date={selected} baseLabel={labelFor(baseResolution?.workoutId)} currentLabel={labelFor(resolution?.effectiveWorkoutId)} adjusted={Boolean(resolution?.override)} workouts={workouts} onClose={() => setEditingDay(false)} onStart={() => {setEditingDay(false); setChoosingWorkout(true);}} onReplace={(id) => void replaceDay(id)} onSwap={(d) => void swapDay(d)} onRestore={() => void restoreDay()} />}
+
+      {program?.scheduleType === 'cycle' && (
+        <CycleAdjustmentSheet
+          open={adjustingCycle}
+          program={program}
+          workouts={workouts}
+          date={today}
+          onClose={() => setAdjustingCycle(false)}
+          onChoose={(cycleIndex) => void handleCycleAdjustment(cycleIndex)}
+        />
+      )}
     </div>
   );
 }
@@ -164,6 +246,9 @@ function TodayWorkoutCard({
   periodWeekName,
   isToday,
   onStart,
+  onAdjustCycle,
+  onOther,
+  onEditDay,
 }: {
   workout: Workout;
   exMap: Map<string, Exercise>;
@@ -171,6 +256,9 @@ function TodayWorkoutCard({
   periodWeekName: string | null;
   isToday: boolean;
   onStart: () => void;
+  onAdjustCycle?: () => void;
+  onOther: () => void;
+  onEditDay: () => void;
 }) {
   const totalSets = workout.exercises.reduce((s, e) => s + e.sets, 0);
   return (
@@ -199,9 +287,17 @@ function TodayWorkoutCard({
         ))}
       </div>
       {isToday && (
-        <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: 14 }} onClick={onStart}>
-          INICIAR TREINO
-        </button>
+        <div className="stack-sm" style={{ marginTop: 14 }}>
+          <button className="btn btn--primary btn--lg btn--block" onClick={onStart}>
+            INICIAR TREINO
+          </button>
+          <div className="row" style={{gap:8}}><button className="btn btn--ghost grow" onClick={onOther}>Treinar outro</button><button className="btn btn--ghost grow" onClick={onEditDay}>Ajustar dia</button></div>
+          {onAdjustCycle && (
+            <button className="btn btn--ghost btn--block cycle-adjust-trigger" onClick={onAdjustCycle}>
+              ↻ Ajustar ciclo a partir de hoje
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -212,11 +308,17 @@ function RestCard({
   workoutById,
   selected,
   isToday,
+  onAdjustCycle,
+  onTrain,
+  onEditDay,
 }: {
   program: NonNullable<ReturnType<typeof useActiveProgram>>;
   workoutById: Map<string, Workout>;
   selected: string;
   isToday: boolean;
+  onAdjustCycle?: () => void;
+  onTrain: () => void;
+  onEditDay: () => void;
 }) {
   const next = nextTrainingDay(program, selected, { inclusive: false });
   const nextWorkout = next ? workoutById.get(next.workoutId) : null;
@@ -233,6 +335,13 @@ function RestCard({
           {weekdayLabel(weekday(next.date))} · {shortDate(next.date)}
         </p>
       )}
+      {onAdjustCycle && (
+        <button className="btn btn--primary btn--block" style={{ marginTop: 12 }} onClick={onAdjustCycle}>
+          ↻ Escolher treino e ajustar ciclo
+        </button>
+      )}
+      {isToday && <button className="btn btn--primary btn--block" style={{marginTop:10}} onClick={onTrain}>FAZER UM TREINO MESMO ASSIM</button>}
+      <button className="btn btn--ghost btn--block" style={{marginTop:8}} onClick={onEditDay}>Ajustar este dia</button>
     </div>
   );
 }

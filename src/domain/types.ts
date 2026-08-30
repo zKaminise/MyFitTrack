@@ -139,6 +139,18 @@ export interface CycleItem {
   workoutId: ID | null;
 }
 
+/** Reposicionamento pontual do ciclo, válido desta data em diante. */
+export interface CycleAdjustment {
+  id: ID;
+  effectiveDate: ISODate;
+  /** Item escolhido no ciclo; o índice serve de fallback se ele for removido. */
+  cycleItemId: ID;
+  cycleIndex: number;
+  /** Offset acumulado no momento do ajuste, para preservar o calendário anterior. */
+  cycleOffsetAtStart: number;
+  createdAt: ISODateTime;
+}
+
 export type MissedPolicy = 'keep-calendar' | 'shift-cycle';
 
 /** Programa ativo: define como o treino de cada dia e determinado. */
@@ -152,6 +164,8 @@ export interface Program extends WithMeta, Ownable {
   missedPolicy: MissedPolicy;
   /** Deslocamento acumulado do ciclo por treinos perdidos/pausas. */
   cycleOffset: number;
+  /** Ajustes manuais de posição sem reescrever dias anteriores. */
+  cycleAdjustments?: CycleAdjustment[];
   /** Ultima data processada para deteccao de treinos perdidos (ciclo shift). */
   lastAdvancedDate?: ISODate | null;
   paused: boolean;
@@ -161,6 +175,19 @@ export interface Program extends WithMeta, Ownable {
   /** Data em que a periodizacao comecou (para saber a semana atual). */
   periodizationStartDate?: ISODate | null;
   active: boolean;
+}
+
+export type ScheduleOverrideType = 'replace' | 'swap' | 'rest';
+
+/** Alteracao manual aplicada apenas a uma data, sem modificar o programa base. */
+export interface ScheduleOverride extends WithMeta, Ownable {
+  programId: ID;
+  date: ISODate;
+  type: ScheduleOverrideType;
+  originalWorkoutId: ID | null;
+  overrideWorkoutId: ID | null;
+  pairedOverrideId?: ID | null;
+  reason?: string;
 }
 
 export interface PeriodizationWeek {
@@ -227,6 +254,13 @@ export type PerceivedEffort = 'muito-leve' | 'leve' | 'normal' | 'dificil' | 'mu
 /** Sessao de treino. Guarda snapshot suficiente para ser imutavel. */
 export interface Session extends WithMeta, Ownable {
   workoutId: ID | null; // template de origem (referencia)
+  /** O que estava efetivamente programado para a data, antes da execucao. */
+  scheduledWorkoutId?: ID | null;
+  scheduledWorkoutName?: string | null;
+  /** Template realmente escolhido para a sessao. */
+  performedWorkoutId?: ID | null;
+  scheduleSource?: 'scheduled' | 'override' | 'swap' | 'extra' | 'manual';
+  scheduleOverrideId?: ID | null;
   workoutName: string; // congelado
   workoutDescription?: string;
   programId?: ID | null;
@@ -272,6 +306,100 @@ export interface Settings extends Ownable {
   updatedAt: ISODateTime;
 }
 
+// ---------- Alimentacao ----------
+
+export interface NutrientValues {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber?: number | null;
+}
+
+export type FoodSource = 'open-food-facts' | 'usda' | 'manual';
+export type FoodUnit = 'g' | 'ml' | 'unidade' | 'porcao';
+
+/** Formato normalizado usado por qualquer provider nutricional. */
+export interface FoodReference {
+  id: ID;
+  source: FoodSource;
+  sourceId: string;
+  name: string;
+  brand?: string | null;
+  servingSize?: number | null;
+  servingUnit?: FoodUnit | null;
+  servingWeightGrams?: number | null;
+  caloriesPer100g: number | null;
+  proteinPer100g: number | null;
+  carbsPer100g: number | null;
+  fatPer100g: number | null;
+  fiberPer100g?: number | null;
+}
+
+/** Cache local de resultados externos. Nao e dado pessoal nem sincronizado. */
+export interface FoodCacheEntry extends WithMeta {
+  food: FoodReference;
+  normalizedSearch: string;
+}
+
+export interface UserFood extends WithMeta, Ownable, FoodReference {
+  source: 'manual';
+}
+
+export interface MealSlot {
+  id: ID;
+  name: string;
+  order: number;
+}
+
+export interface NutritionSettings extends WithMeta, Ownable {
+  calorieTarget: number;
+  proteinTarget: number;
+  carbsTarget: number;
+  fatTarget: number;
+  fiberTarget?: number | null;
+  mealSlots: MealSlot[];
+  favoriteFoodIds: ID[];
+  recentFoodIds: ID[];
+}
+
+export interface SavedMealItem {
+  id: ID;
+  food: FoodReference;
+  quantity: number;
+  unit: FoodUnit;
+  nutrients: NutrientValues;
+}
+
+export interface SavedMeal extends WithMeta, Ownable {
+  name: string;
+  items: SavedMealItem[];
+}
+
+export type FoodLogStatus = 'planned' | 'consumed';
+
+/** Snapshot imutavel do que foi planejado/consumido em um dia alimentar. */
+export interface FoodLogItem {
+  id: ID;
+  mealSlotId: ID;
+  kind: 'food' | 'saved-meal';
+  sourceId: ID;
+  nameSnapshot: string;
+  brandSnapshot?: string | null;
+  quantity: number;
+  unit: FoodUnit;
+  status: FoodLogStatus;
+  nutrients: NutrientValues;
+  components?: SavedMealItem[];
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
+export interface NutritionDay extends WithMeta, Ownable {
+  date: ISODate;
+  items: FoodLogItem[];
+}
+
 // ---------- Autenticacao local (fallback sem Supabase) ----------
 
 /** Conta local (armazenada no IndexedDB quando o Supabase nao esta configurado). */
@@ -293,7 +421,12 @@ export type SyncEntityType =
   | 'session'
   | 'personalRecord'
   | 'customExercise'
-  | 'settings';
+  | 'settings'
+  | 'scheduleOverride'
+  | 'nutritionSettings'
+  | 'userFood'
+  | 'savedMeal'
+  | 'nutritionDay';
 
 export type SyncOperation = 'upsert' | 'delete';
 export type SyncItemStatus = 'pending' | 'syncing' | 'error';
@@ -338,4 +471,9 @@ export interface BackupData {
   periodizations: Periodization[];
   sessions: Session[];
   personalRecords: PersonalRecord[];
+  scheduleOverrides: ScheduleOverride[];
+  nutritionSettings: NutritionSettings[];
+  userFoods: UserFood[];
+  savedMeals: SavedMeal[];
+  nutritionDays: NutritionDay[];
 }

@@ -7,6 +7,7 @@ import { useAuth } from '@/store/authStore';
 const TABS = [
   { to: '/', label: 'Hoje', icon: '🏋️' },
   { to: '/workouts', label: 'Treinos', icon: '📋' },
+  { to: '/nutrition', label: 'Dieta', icon: '🥗' },
   { to: '/history', label: 'Historico', icon: '📈' },
   { to: '/more', label: 'Mais', icon: '⚙️' },
 ];

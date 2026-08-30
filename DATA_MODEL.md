@@ -28,7 +28,7 @@ Entidades relevantes usam UUID, `createdAt`, `updatedAt` e, quando necessario,
 | --- | --- |
 | `profiles` | nome basico da conta |
 | `workouts` | template completo em `data` |
-| `programs` | fixed/cycle, anchor, offset, pausa e periodizacao ativa |
+| `programs` | fixed/cycle, anchor, offset, ajustes pontuais, pausa e periodizacao ativa |
 | `periodizations` | semanas, reps, intensidade, RIR/RPE, deload |
 | `workout_sessions` | snapshot atomico da sessao, exercicios e sets |
 | `personal_records` | PR derivado/cacheado por exercicio |
@@ -38,6 +38,12 @@ Entidades relevantes usam UUID, `createdAt`, `updatedAt` e, quando necessario,
 Todas as tabelas pessoais referenciam `auth.users` com `ON DELETE CASCADE`. RLS
 restringe cada operacao ao dono. O catalogo oficial de exercicios nao e duplicado
 na nuvem.
+
+Em programas rotativos, `cycleAdjustments[]` guarda reposicionamentos com data
+de vigencia e item inicial. Assim e possivel iniciar o ciclo com Treino A hoje
+sem reescrever o que estava programado nos dias anteriores. O campo faz parte
+do agregado `Program`, portanto acompanha backup e sincronizacao cloud no mesmo
+JSON.
 
 ## Snapshot historico
 
@@ -63,3 +69,16 @@ O schema continua aceitando `format: "fit-system-2"` das versoes anteriores.
 O JSON inclui somente os dados da conta atual e nao embute binarios de midia.
 Cache Storage e reconstruido por visualizacao ou por "Preparar meus treinos para
 uso offline" apos um restore.
+## Calendario flexivel
+
+`scheduleOverrides` aplica `replace`, `rest` ou um par `swap` sobre uma única data. A resolução sempre calcula a programação base primeiro e só então aplica o override. Sessões guardam `scheduledWorkoutId`, `scheduledWorkoutName`, `performedWorkoutId` e `scheduleSource`.
+
+## Alimentacao
+
+- `nutritionSettings`: metas e slots de refeição por usuário.
+- `userFoods`: alimentos manuais privados.
+- `savedMeals`: preset agregado com ingredientes e macros.
+- `nutritionDays`: um agregado por `userId + YYYY-MM-DD`, com snapshots planejados/consumidos.
+- `foodCache`: cache local não pessoal de resultados normalizados do provider.
+
+Somente itens `consumed` entram nos totais. Quantidades e nutrientes são persistidos no item diário para preservar o histórico.

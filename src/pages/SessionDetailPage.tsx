@@ -53,6 +53,7 @@ export default function SessionDetailPage() {
       <div className="hero" style={{ marginBottom: 14 }}>
         <div className="faint" style={{ fontSize: 13 }}>{longDate(session.date)} · {relativeDays(session.date)}</div>
         <h2 style={{ fontSize: 22, margin: '4px 0' }}>Treino concluido</h2>
+        {session.scheduleSource && <div className="schedule-history"><span className="pill">{session.scheduleSource === 'extra' ? 'Treino extra' : session.scheduleSource === 'scheduled' ? 'Conforme programado' : 'Programacao ajustada'}</span>{session.scheduledWorkoutName && session.scheduledWorkoutName !== session.workoutName && <span className="faint">Planejado: {session.scheduledWorkoutName} · Realizado: {session.workoutName}</span>}</div>}
         <div className="stat-grid" style={{ marginTop: 10 }}>
           <div className="stat"><div className="stat-val">{formatMinutes(dur * 60)}</div><div className="stat-lbl">Duracao</div></div>
           <div className="stat"><div className="stat-val">{session.exercises.length}</div><div className="stat-lbl">Exercicios</div></div>

@@ -7,6 +7,7 @@ import { useSession } from './sessionStore';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { initSync, fullPull, refreshPendingCount } from '@/sync/engine';
 import { useSyncStatus } from '@/sync/status';
+import { ensureNutritionSettings } from '@/services/nutritionService';
 
 interface AuthState {
   user: AuthUser | null;
@@ -33,6 +34,7 @@ async function applyUser(user: AuthUser | null): Promise<void> {
     return;
   }
   await ensureSettings(user.id);
+  await ensureNutritionSettings();
   await useSettings.getState().load();
   await useSession.getState().load();
   await refreshPendingCount();

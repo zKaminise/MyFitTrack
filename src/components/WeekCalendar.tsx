@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { Program, Session } from '@/domain/types';
-import { resolveDay } from '@/domain/scheduling';
+import type { Program, ScheduleOverride, Session } from '@/domain/types';
+import { resolveSchedule } from '@/domain/scheduleOverrides';
 import { weekDates, weekdayLabel, weekday, dayNumber, todayISO, addDays, daysBetween } from '@/domain/dates';
 
 interface Props {
@@ -8,17 +8,20 @@ interface Props {
   sessions: Session[];
   selected: string;
   onSelect: (date: string) => void;
+  overrides?: ScheduleOverride[];
 }
 
-export function WeekCalendar({ program, sessions, selected, onSelect }: Props) {
+export function WeekCalendar({ program, sessions, selected, onSelect, overrides = [] }: Props) {
   const [anchor, setAnchor] = useState(selected);
   const days = weekDates(anchor);
   const today = todayISO();
-  const doneDates = new Set(sessions.filter((s) => s.status === 'completed').map((s) => s.date));
+  const doneCount = new Map<string, number>();
+  sessions.filter((s) => s.status === 'completed').forEach(s => doneCount.set(s.date, (doneCount.get(s.date) ?? 0) + 1));
 
   function markFor(date: string): { cls: string; ch: string } {
-    if (doneDates.has(date)) return { cls: 'mark-done', ch: '✓' };
-    const res = program ? resolveDay(program, date) : { isRest: true, workoutId: null };
+    const count = doneCount.get(date) ?? 0;
+    if (count) return { cls: 'mark-done', ch: count > 1 ? String(count) : '✓' };
+    const res = program ? resolveSchedule(program, date, overrides) : { isRest: true, workoutId: null };
     if (res.isRest) return { cls: 'mark-rest', ch: '—' };
     // Dia de treino
     if (daysBetween(date, today) > 0) return { cls: 'mark-missed', ch: '!' };
@@ -55,6 +58,7 @@ export function WeekCalendar({ program, sessions, selected, onSelect }: Props) {
               <span className="wd-label">{weekdayLabel(weekday(d))}</span>
               <span className="wd-num">{dayNumber(d)}</span>
               <span className={`wd-mark ${mark.cls}`}>{mark.ch}</span>
+              {overrides.some(o => o.date === d && !o.deletedAt) && <span className="wd-adjusted" aria-label="Ajustado">•</span>}
             </button>
           );
         })}

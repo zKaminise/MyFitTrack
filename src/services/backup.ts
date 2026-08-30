@@ -7,7 +7,7 @@ import { uuid, nowISO } from '@/lib/id';
 import { getCurrentUserId } from '@/repositories/context';
 import { enqueue } from '@/sync/queue';
 
-const BACKUP_VERSION = 3;
+const BACKUP_VERSION = 4;
 const MAX_AUTO_SNAPSHOTS = 5;
 
 /** Backup dos dados da CONTA ATUAL (nunca inclui dados de outros usuarios). */
@@ -16,7 +16,7 @@ export async function buildBackup(): Promise<BackupData> {
   const mine = <T extends { userId?: string | null }>(arr: T[]) =>
     arr.filter((r) => r.userId === uid);
 
-  const [settings, exercisesAll, workouts, programs, periodizations, sessions, personalRecords] =
+  const [settings, exercisesAll, workouts, programs, periodizations, sessions, personalRecords, scheduleOverrides, nutritionSettings, userFoods, savedMeals, nutritionDays] =
     await Promise.all([
       uid ? db.settings.get(uid) : undefined,
       db.exercises.toArray(),
@@ -25,6 +25,7 @@ export async function buildBackup(): Promise<BackupData> {
       db.periodizations.toArray(),
       db.sessions.toArray(),
       db.personalRecords.toArray(),
+      db.scheduleOverrides.toArray(), db.nutritionSettings.toArray(), db.userFoods.toArray(), db.savedMeals.toArray(), db.nutritionDays.toArray(),
     ]);
 
   return {
@@ -39,6 +40,11 @@ export async function buildBackup(): Promise<BackupData> {
     periodizations: mine(periodizations),
     sessions: mine(sessions),
     personalRecords: mine(personalRecords),
+    scheduleOverrides: mine(scheduleOverrides),
+    nutritionSettings: mine(nutritionSettings),
+    userFoods: mine(userFoods),
+    savedMeals: mine(savedMeals),
+    nutritionDays: mine(nutritionDays),
   };
 }
 
@@ -78,9 +84,14 @@ export async function restoreBackup(data: BackupData): Promise<void> {
   const periodizations = stamp(data.periodizations);
   const sessions = stamp(data.sessions);
   const personalRecords = stamp(data.personalRecords);
+  const scheduleOverrides = stamp(data.scheduleOverrides ?? []);
+  const nutritionSettings = stamp(data.nutritionSettings ?? []).map(s => ({...s,id:uid}));
+  const userFoods = stamp(data.userFoods ?? []);
+  const savedMeals = stamp(data.savedMeals ?? []);
+  const nutritionDays = stamp(data.nutritionDays ?? []);
   const settings = data.settings ? { ...data.settings, id: uid, userId: uid } : null;
 
-  const [oldExercises, oldWorkouts, oldPrograms, oldPeriodizations, oldSessions, oldRecords] =
+  const [oldExercises, oldWorkouts, oldPrograms, oldPeriodizations, oldSessions, oldRecords, oldOverrides, oldNutritionSettings, oldFoods, oldMeals, oldNutritionDays] =
     await Promise.all([
       db.exercises.where('userId').equals(uid).toArray(),
       db.workouts.where('userId').equals(uid).toArray(),
@@ -88,11 +99,12 @@ export async function restoreBackup(data: BackupData): Promise<void> {
       db.periodizations.where('userId').equals(uid).toArray(),
       db.sessions.where('userId').equals(uid).toArray(),
       db.personalRecords.where('userId').equals(uid).toArray(),
+      db.scheduleOverrides.where('userId').equals(uid).toArray(), db.nutritionSettings.where('userId').equals(uid).toArray(), db.userFoods.where('userId').equals(uid).toArray(), db.savedMeals.where('userId').equals(uid).toArray(), db.nutritionDays.where('userId').equals(uid).toArray(),
     ]);
 
   await db.transaction(
     'rw',
-    [db.settings, db.exercises, db.workouts, db.programs, db.periodizations, db.sessions, db.personalRecords],
+    [db.settings, db.exercises, db.workouts, db.programs, db.periodizations, db.sessions, db.personalRecords, db.scheduleOverrides, db.nutritionSettings, db.userFoods, db.savedMeals, db.nutritionDays],
     async () => {
       await db.workouts.where('userId').equals(uid).delete();
       await db.programs.where('userId').equals(uid).delete();
@@ -100,6 +112,11 @@ export async function restoreBackup(data: BackupData): Promise<void> {
       await db.sessions.where('userId').equals(uid).delete();
       await db.personalRecords.where('userId').equals(uid).delete();
       await db.exercises.where('userId').equals(uid).delete(); // apenas custom
+      await db.scheduleOverrides.where('userId').equals(uid).delete();
+      await db.nutritionSettings.where('userId').equals(uid).delete();
+      await db.userFoods.where('userId').equals(uid).delete();
+      await db.savedMeals.where('userId').equals(uid).delete();
+      await db.nutritionDays.where('userId').equals(uid).delete();
       if (settings) await db.settings.put(settings);
       if (customExercises.length) await db.exercises.bulkPut(customExercises);
       if (workouts.length) await db.workouts.bulkPut(workouts);
@@ -107,6 +124,11 @@ export async function restoreBackup(data: BackupData): Promise<void> {
       if (periodizations.length) await db.periodizations.bulkPut(periodizations);
       if (sessions.length) await db.sessions.bulkPut(sessions);
       if (personalRecords.length) await db.personalRecords.bulkPut(personalRecords);
+      if (scheduleOverrides.length) await db.scheduleOverrides.bulkPut(scheduleOverrides);
+      if (nutritionSettings.length) await db.nutritionSettings.bulkPut(nutritionSettings);
+      if (userFoods.length) await db.userFoods.bulkPut(userFoods);
+      if (savedMeals.length) await db.savedMeals.bulkPut(savedMeals);
+      if (nutritionDays.length) await db.nutritionDays.bulkPut(nutritionDays);
     },
   );
 
@@ -126,6 +148,11 @@ export async function restoreBackup(data: BackupData): Promise<void> {
   await enqueueRemoved('periodization', oldPeriodizations.map((e) => e.id), periodizations.map((e) => e.id));
   await enqueueRemoved('session', oldSessions.map((e) => e.id), sessions.map((e) => e.id));
   await enqueueRemoved('personalRecord', oldRecords.map((e) => e.id), personalRecords.map((e) => e.id));
+  await enqueueRemoved('scheduleOverride', oldOverrides.map(e=>e.id), scheduleOverrides.map(e=>e.id));
+  await enqueueRemoved('nutritionSettings', oldNutritionSettings.map(e=>e.id), nutritionSettings.map(e=>e.id));
+  await enqueueRemoved('userFood', oldFoods.map(e=>e.id), userFoods.map(e=>e.id));
+  await enqueueRemoved('savedMeal', oldMeals.map(e=>e.id), savedMeals.map(e=>e.id));
+  await enqueueRemoved('nutritionDay', oldNutritionDays.map(e=>e.id), nutritionDays.map(e=>e.id));
 
   // Enfileira os dados restaurados para a nuvem (no-op em modo local).
   if (settings) await enqueue('settings', settings.id, 'upsert', settings);
@@ -135,6 +162,11 @@ export async function restoreBackup(data: BackupData): Promise<void> {
   for (const p of periodizations) await enqueue('periodization', p.id, 'upsert', p);
   for (const s of sessions) await enqueue('session', s.id, 'upsert', s);
   for (const r of personalRecords) await enqueue('personalRecord', r.id, 'upsert', r);
+  for (const r of scheduleOverrides) await enqueue('scheduleOverride', r.id, 'upsert', r);
+  for (const r of nutritionSettings) await enqueue('nutritionSettings', r.id, 'upsert', r);
+  for (const r of userFoods) await enqueue('userFood', r.id, 'upsert', r);
+  for (const r of savedMeals) await enqueue('savedMeal', r.id, 'upsert', r);
+  for (const r of nutritionDays) await enqueue('nutritionDay', r.id, 'upsert', r);
 }
 
 /** Mescla o backup na conta atual sem remover entidades que ja existem. */
@@ -148,6 +180,9 @@ export async function mergeBackup(data: BackupData): Promise<void> {
   const periods = stamp(data.periodizations);
   const sessions = stamp(data.sessions);
   const records = stamp(data.personalRecords);
+  const overrides = stamp(data.scheduleOverrides ?? []);
+  const nutritionSettings = stamp(data.nutritionSettings ?? []).map(s=>({...s,id:uid}));
+  const foods = stamp(data.userFoods ?? []); const meals = stamp(data.savedMeals ?? []); const nutritionDays = stamp(data.nutritionDays ?? []);
   const currentSettings = await db.settings.get(uid);
   const incomingSettings = data.settings
     ? {
@@ -164,7 +199,7 @@ export async function mergeBackup(data: BackupData): Promise<void> {
 
   await db.transaction(
     'rw',
-    [db.settings, db.exercises, db.workouts, db.programs, db.periodizations, db.sessions, db.personalRecords],
+    [db.settings, db.exercises, db.workouts, db.programs, db.periodizations, db.sessions, db.personalRecords, db.scheduleOverrides, db.nutritionSettings, db.userFoods, db.savedMeals, db.nutritionDays],
     async () => {
       if (incomingSettings) await db.settings.put(incomingSettings);
       if (exercises.length) await db.exercises.bulkPut(exercises);
@@ -173,6 +208,9 @@ export async function mergeBackup(data: BackupData): Promise<void> {
       if (periods.length) await db.periodizations.bulkPut(periods);
       if (sessions.length) await db.sessions.bulkPut(sessions);
       if (records.length) await db.personalRecords.bulkPut(records);
+      if (overrides.length) await db.scheduleOverrides.bulkPut(overrides);
+      if (nutritionSettings.length) await db.nutritionSettings.bulkPut(nutritionSettings);
+      if (foods.length) await db.userFoods.bulkPut(foods); if (meals.length) await db.savedMeals.bulkPut(meals); if (nutritionDays.length) await db.nutritionDays.bulkPut(nutritionDays);
     },
   );
 
@@ -183,6 +221,11 @@ export async function mergeBackup(data: BackupData): Promise<void> {
   for (const entity of periods) await enqueue('periodization', entity.id, 'upsert', entity);
   for (const entity of sessions) await enqueue('session', entity.id, 'upsert', entity);
   for (const entity of records) await enqueue('personalRecord', entity.id, 'upsert', entity);
+  for (const entity of overrides) await enqueue('scheduleOverride', entity.id, 'upsert', entity);
+  for (const entity of nutritionSettings) await enqueue('nutritionSettings', entity.id, 'upsert', entity);
+  for (const entity of foods) await enqueue('userFood', entity.id, 'upsert', entity);
+  for (const entity of meals) await enqueue('savedMeal', entity.id, 'upsert', entity);
+  for (const entity of nutritionDays) await enqueue('nutritionDay', entity.id, 'upsert', entity);
 }
 
 export function parseBackupFile(text: string) {

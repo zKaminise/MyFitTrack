@@ -14,6 +14,11 @@ export const TABLE: Record<SyncEntityType, string> = {
   personalRecord: 'personal_records',
   customExercise: 'custom_exercises',
   settings: 'user_settings',
+  scheduleOverride: 'schedule_overrides',
+  nutritionSettings: 'nutrition_settings',
+  userFood: 'user_foods',
+  savedMeal: 'saved_meals',
+  nutritionDay: 'nutrition_days',
 };
 
 function sb() {
@@ -43,6 +48,16 @@ function rowFor(entityType: SyncEntityType, userId: string, p: any): Record<stri
       return { id: p.id, ...base };
     case 'settings':
       return { user_id: userId, data: p, updated_at: p.updatedAt ?? nowISO() };
+    case 'scheduleOverride':
+      return { id: p.id, program_id: p.programId, date: p.date, type: p.type, ...base };
+    case 'nutritionSettings':
+      return { user_id: userId, data: p, updated_at: p.updatedAt ?? nowISO() };
+    case 'userFood':
+      return { id: p.id, name: p.name, ...base };
+    case 'savedMeal':
+      return { id: p.id, name: p.name, ...base };
+    case 'nutritionDay':
+      return { id: p.id, date: p.date, ...base };
   }
 }
 
@@ -50,7 +65,7 @@ function rowFor(entityType: SyncEntityType, userId: string, p: any): Record<stri
 export async function pushOp(item: SyncQueueItem): Promise<void> {
   const table = TABLE[item.entityType];
   if (item.operation === 'delete') {
-    if (item.entityType === 'settings') {
+    if (item.entityType === 'settings' || item.entityType === 'nutritionSettings') {
       const { error } = await sb().from(table).delete().eq('user_id', item.userId);
       if (error) throw error;
     } else {
@@ -64,7 +79,7 @@ export async function pushOp(item: SyncQueueItem): Promise<void> {
     return;
   }
   const row = rowFor(item.entityType, item.userId, item.payload);
-  const onConflict = item.entityType === 'settings' ? 'user_id' : 'id';
+  const onConflict = item.entityType === 'settings' || item.entityType === 'nutritionSettings' ? 'user_id' : 'id';
   const { error } = await sb().from(table).upsert(row, { onConflict });
   if (error) throw error;
 }

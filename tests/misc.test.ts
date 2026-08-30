@@ -99,4 +99,39 @@ describe('validacao de backup', () => {
     });
     expect(result.ok).toBe(true);
   });
+
+  it('preserva ajustes pontuais do ciclo no backup', () => {
+    const result = validateBackup({
+      format: 'myfittrack',
+      version: 3,
+      exportedAt: '2026-08-29T10:00:00.000Z',
+      settings: null,
+      exercises: [],
+      workouts: [],
+      programs: [
+        {
+          id: 'program-1',
+          createdAt: '2026-08-01T10:00:00.000Z',
+          updatedAt: '2026-08-29T10:00:00.000Z',
+          cycleAdjustments: [
+            {
+              id: 'adjust-1',
+              effectiveDate: '2026-08-29',
+              cycleItemId: 'cycle-a',
+              cycleIndex: 0,
+              cycleOffsetAtStart: 0,
+              createdAt: '2026-08-29T10:00:00.000Z',
+            },
+          ],
+        },
+      ],
+      periodizations: [],
+      sessions: [],
+      personalRecords: [],
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.programs[0].cycleAdjustments?.[0].cycleItemId).toBe('cycle-a');
+    }
+  });
 });

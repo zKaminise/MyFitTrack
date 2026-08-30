@@ -13,6 +13,12 @@ import type {
   PersonalRecord,
   Settings,
   BackupSnapshot,
+  ScheduleOverride,
+  NutritionSettings,
+  UserFood,
+  SavedMeal,
+  NutritionDay,
+  FoodCacheEntry,
 } from '@/domain/types';
 import type {
   ExerciseRepository,
@@ -23,6 +29,12 @@ import type {
   PersonalRecordRepository,
   SettingsRepository,
   BackupRepository,
+  ScheduleOverrideRepository,
+  NutritionSettingsRepository,
+  UserFoodRepository,
+  SavedMealRepository,
+  NutritionDayRepository,
+  FoodCacheRepository,
 } from './interfaces';
 
 const uid = getCurrentUserId;
@@ -170,4 +182,81 @@ export const backupRepo: BackupRepository = {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     await db.backups.bulkDelete(autos.slice(keep).map((b) => b.id));
   },
+};
+
+export const scheduleOverrideRepo: ScheduleOverrideRepository = {
+  all: async () => (uid() ? db.scheduleOverrides.where('userId').equals(uid()!).toArray() : []),
+  get: async (id) => owned(await db.scheduleOverrides.get(id)),
+  put: async (item: ScheduleOverride) => {
+    const entity = { ...item, userId: item.userId ?? uid() };
+    await db.scheduleOverrides.put(entity);
+    await enqueue('scheduleOverride', entity.id, 'upsert', entity);
+  },
+  remove: async (id) => {
+    await db.scheduleOverrides.delete(id);
+    await enqueue('scheduleOverride', id, 'delete', { id });
+  },
+};
+
+export const nutritionSettingsRepo: NutritionSettingsRepository = {
+  all: async () => (uid() ? db.nutritionSettings.where('userId').equals(uid()!).toArray() : []),
+  get: async (id) => owned(await db.nutritionSettings.get(id)),
+  put: async (item: NutritionSettings) => {
+    const entity = { ...item, userId: item.userId ?? uid() };
+    await db.nutritionSettings.put(entity);
+    await enqueue('nutritionSettings', entity.id, 'upsert', entity);
+  },
+  remove: async (id) => {
+    await db.nutritionSettings.delete(id);
+    await enqueue('nutritionSettings', id, 'delete', { id });
+  },
+};
+
+export const userFoodRepo: UserFoodRepository = {
+  all: async () => (uid() ? db.userFoods.where('userId').equals(uid()!).toArray() : []),
+  get: async (id) => owned(await db.userFoods.get(id)),
+  put: async (item: UserFood) => {
+    const entity = { ...item, userId: item.userId ?? uid() };
+    await db.userFoods.put(entity);
+    await enqueue('userFood', entity.id, 'upsert', entity);
+  },
+  remove: async (id) => {
+    await db.userFoods.delete(id);
+    await enqueue('userFood', id, 'delete', { id });
+  },
+};
+
+export const savedMealRepo: SavedMealRepository = {
+  all: async () => (uid() ? db.savedMeals.where('userId').equals(uid()!).toArray() : []),
+  get: async (id) => owned(await db.savedMeals.get(id)),
+  put: async (item: SavedMeal) => {
+    const entity = { ...item, userId: item.userId ?? uid() };
+    await db.savedMeals.put(entity);
+    await enqueue('savedMeal', entity.id, 'upsert', entity);
+  },
+  remove: async (id) => {
+    await db.savedMeals.delete(id);
+    await enqueue('savedMeal', id, 'delete', { id });
+  },
+};
+
+export const nutritionDayRepo: NutritionDayRepository = {
+  all: async () => (uid() ? db.nutritionDays.where('userId').equals(uid()!).toArray() : []),
+  get: async (id) => owned(await db.nutritionDays.get(id)),
+  put: async (item: NutritionDay) => {
+    const entity = { ...item, userId: item.userId ?? uid() };
+    await db.nutritionDays.put(entity);
+    await enqueue('nutritionDay', entity.id, 'upsert', entity);
+  },
+  remove: async (id) => {
+    await db.nutritionDays.delete(id);
+    await enqueue('nutritionDay', id, 'delete', { id });
+  },
+};
+
+export const foodCacheRepo: FoodCacheRepository = {
+  all: async () => db.foodCache.toArray(),
+  get: async (id) => db.foodCache.get(id),
+  put: async (item: FoodCacheEntry) => void (await db.foodCache.put(item)),
+  remove: async (id) => void (await db.foodCache.delete(id)),
 };

@@ -10,6 +10,12 @@ import type {
   PersonalRecord,
   Settings,
   BackupSnapshot,
+  ScheduleOverride,
+  NutritionSettings,
+  UserFood,
+  SavedMeal,
+  NutritionDay,
+  FoodCacheEntry,
 } from '@/domain/types';
 
 export interface CrudRepository<T> {
@@ -22,6 +28,12 @@ export interface CrudRepository<T> {
 export type ExerciseRepository = CrudRepository<Exercise>;
 export type WorkoutRepository = CrudRepository<Workout>;
 export type PeriodizationRepository = CrudRepository<Periodization>;
+export type ScheduleOverrideRepository = CrudRepository<ScheduleOverride>;
+export type NutritionSettingsRepository = CrudRepository<NutritionSettings>;
+export type UserFoodRepository = CrudRepository<UserFood>;
+export type SavedMealRepository = CrudRepository<SavedMeal>;
+export type NutritionDayRepository = CrudRepository<NutritionDay>;
+export type FoodCacheRepository = CrudRepository<FoodCacheEntry>;
 
 export interface ProgramRepository extends CrudRepository<Program> {
   getActive(): Promise<Program | undefined>;

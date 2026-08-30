@@ -22,6 +22,11 @@ function localTable(entityType: SyncEntityType) {
     case 'personalRecord': return db.personalRecords;
     case 'customExercise': return db.exercises;
     case 'settings': return db.settings;
+    case 'scheduleOverride': return db.scheduleOverrides;
+    case 'nutritionSettings': return db.nutritionSettings;
+    case 'userFood': return db.userFoods;
+    case 'savedMeal': return db.savedMeals;
+    case 'nutritionDay': return db.nutritionDays;
   }
 }
 
@@ -109,10 +114,18 @@ async function pullRemote(uid: string): Promise<void> {
 async function applyPulled(row: PulledRow): Promise<void> {
   const table = localTable(row.entityType) as any;
   if (row.deletedAt) {
-    await table.delete(row.entityType === 'settings' ? row.data?.id ?? row.id : row.id);
+    await table.delete(
+      row.entityType === 'settings' || row.entityType === 'nutritionSettings'
+        ? row.data?.id ?? row.id
+        : row.id,
+    );
     return;
   }
-  const local = await table.get(row.entityType === 'settings' ? row.data?.id ?? row.id : row.id);
+  const local = await table.get(
+    row.entityType === 'settings' || row.entityType === 'nutritionSettings'
+      ? row.data?.id ?? row.id
+      : row.id,
+  );
   // Last-write-wins por updatedAt.
   if (!local || (row.data?.updatedAt ?? row.updatedAt) >= (local.updatedAt ?? '')) {
     await table.put(row.data);

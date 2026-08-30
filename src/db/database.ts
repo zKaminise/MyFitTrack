@@ -12,6 +12,12 @@ import type {
   LocalUser,
   SyncQueueItem,
   SyncMeta,
+  ScheduleOverride,
+  NutritionSettings,
+  UserFood,
+  SavedMeal,
+  NutritionDay,
+  FoodCacheEntry,
 } from '@/domain/types';
 
 /** Marcador de dados criados antes da introducao de contas (fase local-only). */
@@ -29,6 +35,12 @@ export class FitDatabase extends Dexie {
   users!: Table<LocalUser, string>;
   syncQueue!: Table<SyncQueueItem, string>;
   syncMeta!: Table<SyncMeta, string>;
+  scheduleOverrides!: Table<ScheduleOverride, string>;
+  nutritionSettings!: Table<NutritionSettings, string>;
+  userFoods!: Table<UserFood, string>;
+  savedMeals!: Table<SavedMeal, string>;
+  nutritionDays!: Table<NutritionDay, string>;
+  foodCache!: Table<FoodCacheEntry, string>;
 
   constructor() {
     super('fit-system-2');
@@ -97,6 +109,28 @@ export class FitDatabase extends Dexie {
           await tx.table('settings').delete('singleton');
         }
       });
+
+    // v3 — calendario flexivel e alimentacao local-first. Apenas adiciona
+    // stores; nenhum dado existente de treino e regravado ou removido.
+    this.version(3).stores({
+      settings: 'id, userId',
+      exercises: 'id, name, primaryMuscle, equipment, isCustom, userId',
+      workouts: 'id, userId, name, archived',
+      programs: 'id, userId, active',
+      periodizations: 'id, userId',
+      sessions: 'id, userId, date, workoutId, status, startedAt',
+      personalRecords: 'id, userId, exerciseId, type, date',
+      backups: 'id, createdAt, auto, userId',
+      users: 'id, &email',
+      syncQueue: 'id, userId, status, createdAt',
+      syncMeta: 'id',
+      scheduleOverrides: 'id, userId, programId, date, type',
+      nutritionSettings: 'id, userId',
+      userFoods: 'id, userId, name, sourceId',
+      savedMeals: 'id, userId, name',
+      nutritionDays: 'id, userId, date',
+      foodCache: 'id, normalizedSearch, updatedAt',
+    });
   }
 }
 
