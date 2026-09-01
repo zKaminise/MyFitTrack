@@ -45,6 +45,7 @@ export default function App() {
   const { user, loading } = useAuth();
   const location = useLocation();
 
+
   if (loading) return <Splash />;
 
   if (location.pathname === '/reset-password') return <ResetPasswordPage />;

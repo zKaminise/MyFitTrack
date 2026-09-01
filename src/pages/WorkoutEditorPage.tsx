@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useWorkout, useExerciseMap } from '@/hooks/useData';
 import { BackHeader } from '@/ui/PageHeader';
@@ -337,12 +337,39 @@ function ExerciseConfigSheet({
 }
 
 function NumberField({ label, value, onChange, min, step = 1 }: { label: string; value: number; onChange: (v: number) => void; min?: number; step?: number }) {
+  const [draftValue, setDraftValue] = useState(String(value));
+
+  useEffect(() => {
+    setDraftValue(String(value));
+  }, [value]);
+
+  const commit = () => {
+    if (draftValue.trim() === '') {
+      setDraftValue(String(value));
+      return;
+    }
+    const parsed = Number(draftValue);
+    if (!Number.isFinite(parsed)) {
+      setDraftValue(String(value));
+      return;
+    }
+    const normalized = min != null ? Math.max(min, parsed) : parsed;
+    setDraftValue(String(normalized));
+    if (normalized !== value) onChange(normalized);
+  };
+
   return (
     <div className="field grow">
       <label>{label}</label>
       <input
-        className="input" type="number" inputMode="numeric" value={value}
-        onChange={(e) => { const v = Number(e.target.value); onChange(min != null ? Math.max(min, v) : v); }}
+        className="input"
+        type="number"
+        inputMode="numeric"
+        value={draftValue}
+        min={min}
+        onChange={(e) => setDraftValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
         step={step}
       />
     </div>
