@@ -20,14 +20,20 @@
 - Alimentacao local-first: metas, slots, planejado/consumido, alimentos manuais,
   busca Open Food Facts, cache offline, refeicoes salvas, totais e media recente;
 - sync/RLS/backup para schedule overrides e agregados nutricionais.
+- prescrição individual por série com faixa, tipo, descanso, RIR/RPE, rest-pause e snapshot histórico;
+- observações do exercício destacadas durante a execução;
+- exercícios autorais com instruções, imagens início/fim ou vídeo e publicação opcional com autoria;
+- catálogo comunitário com RLS de escrita por autor e cache local.
 
 ## NEEDS EXTERNAL CONFIGURATION
 
 - criar o projeto Supabase dedicado `myfittrack`;
 - fornecer `Project URL`, `Publishable Key` e `Project Ref`;
 - aplicar as novas migrations `0004_schedule_overrides.sql` e `0005_nutrition.sql`;
+- aplicar `0006_set_prescriptions_and_community_exercises.sql`;
 - configurar Auth Site URL/Redirect URLs;
 - deploy da nova function `nutrition-search` (alem de `delete-account`);
+- republicar `delete-account` para limpeza das mídias do Storage;
 - executar smoke test real de RLS, dois clientes, offline→reconnect e cross-device;
 - configurar as duas env vars na Vercel e fazer o deploy.
 

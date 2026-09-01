@@ -24,6 +24,7 @@ import { useAuth } from '@/store/authStore';
 import { programRepo } from '@/repositories/dexie';
 import { nowISO, uuid } from '@/lib/id';
 import { replaceScheduleDay, restoreScheduleDay, swapScheduleDays } from '@/services/scheduleOverrideService';
+import { hasMixedPrescription } from '@/domain/setPrescription';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -282,7 +283,7 @@ function TodayWorkoutCard({
         {[...workout.exercises].sort((a, b) => a.order - b.order).map((e, i) => (
           <div key={e.id} className="row-between" style={{ fontSize: 14 }}>
             <span className="muted">{i + 1}. {exMap.get(e.exerciseId)?.name ?? 'Exercicio'}</span>
-            <span className="faint">{e.sets} × {repRange(e.repMin, e.repMax)}</span>
+            <span className="faint">{hasMixedPrescription(e) ? `${e.sets} séries variadas` : `${e.sets} × ${repRange(e.repMin, e.repMax)}`}</span>
           </div>
         ))}
       </div>

@@ -12,7 +12,7 @@ import type { Exercise, SessionExercise, SetLog, PerceivedEffort } from '@/domai
 import { findLastPerformance, lastWorkingSets } from '@/services/history';
 import { evaluateProgression, doubleProgressionHint } from '@/domain/progression';
 import { sessionVolume, sessionCompletedSets, percentChange } from '@/domain/volume';
-import { MUSCLE_LABEL, EFFORT_LABEL, EFFORT_ORDER, repRange, formatDuration, formatNumber } from '@/lib/labels';
+import { MUSCLE_LABEL, EFFORT_LABEL, EFFORT_ORDER, SET_TYPE_LABEL, repRange, formatDuration, formatNumber } from '@/lib/labels';
 import { ExerciseThumb } from '@/components/ExerciseMedia';
 import { SyncIndicator } from '@/components/SyncIndicator';
 
@@ -162,9 +162,14 @@ function ExerciseCard({
   const nav = useNavigate();
 
   const skipped = ex.status === 'skipped';
+  const firstTarget = ex.sets[0];
+  const uniformTargets = ex.sets.every((set) =>
+    (set.targetRepMin ?? ex.repMin) === (firstTarget?.targetRepMin ?? ex.repMin)
+    && (set.targetRepMax ?? ex.repMax) === (firstTarget?.targetRepMax ?? ex.repMax),
+  );
 
   const progression =
-    progressionSets.length > 0
+    progressionSets.length > 0 && uniformTargets
       ? (settings.useDoubleProgression ? doubleProgressionHint : evaluateProgression)({
           repMin: ex.repMin,
           repMax: ex.repMax,
@@ -178,7 +183,8 @@ function ExerciseCard({
     store.toggleComplete(ex.id, set.id);
     if (willComplete) {
       vibrate(30, settings.vibration);
-      if (settings.autoStartTimer && ex.restSeconds > 0) restTimer.start(ex.restSeconds);
+      const restSeconds = set.restSeconds ?? ex.restSeconds;
+      if (settings.autoStartTimer && restSeconds > 0) restTimer.start(restSeconds);
     }
   }
 
@@ -198,14 +204,14 @@ function ExerciseCard({
               {skipped && <span className="pill pill--red">pulado</span>}
             </div>
             <span className="muted" style={{ fontSize: 13 }}>
-              {performed ? MUSCLE_LABEL[performed.primaryMuscle] : ''} · Meta {ex.targetSets} × {repRange(ex.repMin, ex.repMax)} · descanso {ex.restSeconds}s
+              {performed ? MUSCLE_LABEL[performed.primaryMuscle] : ''} · {ex.targetSets} séries · metas individuais abaixo
             </span>
           </div>
         </button>
         <button className="icon-btn" onClick={onMenu} aria-label="Opcoes">⋮</button>
       </div>
 
-      {ex.notes && <p className="faint" style={{ fontSize: 13, marginTop: 8 }}>📝 {ex.notes}</p>}
+      {ex.notes && <div className="exercise-session-note"><span>📝 Ponto de atenção</span><strong>{ex.notes}</strong></div>}
 
       {progression && progression.direction !== 'insufficient' && (
         <div className={`badge-progress ${progression.direction === 'increase' ? 'increase' : progression.direction === 'reduce' ? 'reduce' : 'hold'}`} style={{ marginTop: 10 }}>
@@ -221,7 +227,7 @@ function ExerciseCard({
         <table className="set-table" style={{ marginTop: 10 }}>
           <thead>
             <tr>
-              <th style={{ width: 30 }}>#</th>
+              <th style={{ width: 112 }}>Série / meta</th>
               <th>Anterior</th>
               <th>Peso</th>
               <th>Reps</th>
@@ -233,7 +239,7 @@ function ExerciseCard({
               const prev = previousSets[i];
               return (
                 <tr key={set.id} className={set.completed ? 'set-row--done' : ''}>
-                  <td className="set-idx">{set.setIndex}</td>
+                  <td className="set-idx set-target-cell"><strong>{set.setIndex}</strong><span>{SET_TYPE_LABEL[set.setType]}</span><small>{repRange(set.targetRepMin ?? ex.repMin, set.targetRepMax ?? ex.repMax)} reps · {set.restSeconds ?? ex.restSeconds}s</small>{set.intraSetRestSeconds ? <small>pausa interna {set.intraSetRestSeconds}s</small> : null}{set.prescriptionNotes ? <em>{set.prescriptionNotes}</em> : null}</td>
                   <td className="set-prev">
                     {prev && prev.weight != null ? `${prev.weight} × ${prev.reps ?? '-'}` : '—'}
                   </td>
@@ -243,7 +249,7 @@ function ExerciseCard({
                       type="number"
                       inputMode="decimal"
                       value={set.weight ?? ''}
-                      placeholder="0"
+                      placeholder={prev?.weight != null ? String(prev.weight) : '0'}
                       onChange={(e) =>
                         store.updateSet(ex.id, set.id, {
                           weight: e.target.value === '' ? null : Number(e.target.value),

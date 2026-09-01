@@ -33,6 +33,20 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers });
     }
 
+    // Storage nao participa do ON DELETE CASCADE. Remove primeiro as midias
+    // do prefixo exclusivo do usuario, em lotes, sem aceitar paths do cliente.
+    const media = admin.storage.from('exercise-media');
+    const { data: exerciseFolders } = await media.list(userData.user.id, { limit: 1000 });
+    const paths: string[] = [];
+    for (const folder of exerciseFolders ?? []) {
+      const prefix = `${userData.user.id}/${folder.name}`;
+      const { data: files } = await media.list(prefix, { limit: 1000 });
+      for (const file of files ?? []) paths.push(`${prefix}/${file.name}`);
+    }
+    for (let index = 0; index < paths.length; index += 100) {
+      await media.remove(paths.slice(index, index + 100));
+    }
+
     // ON DELETE CASCADE remove apenas os dados ligados a esse auth.users.id.
     const { error } = await admin.auth.admin.deleteUser(userData.user.id);
     if (error) throw error;

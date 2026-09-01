@@ -7,7 +7,7 @@ import { confirmAction, toast } from '@/ui/feedback';
 import type { Session, SetLog } from '@/domain/types';
 import { sessionVolume, sessionCompletedSets, sessionDurationMinutes } from '@/domain/volume';
 import { longDate, relativeDays } from '@/domain/dates';
-import { EFFORT_LABEL, formatMinutes, formatNumber, repRange } from '@/lib/labels';
+import { EFFORT_LABEL, SET_TYPE_LABEL, formatMinutes, formatNumber, repRange } from '@/lib/labels';
 import { nowISO } from '@/lib/id';
 import { recalcAllPRs } from '@/services/prService';
 import { sessionRepo } from '@/repositories/dexie';
@@ -83,7 +83,7 @@ export default function SessionDetailPage() {
               <div className="stack-sm" style={{ marginTop: 8 }}>
                 {ex.sets.filter((s) => s.completed).map((s) => (
                   <div key={s.id} className="row-between" style={{ fontSize: 14 }}>
-                    <span className="faint">Serie {s.setIndex}</span>
+                    <span className="faint">Série {s.setIndex} · {SET_TYPE_LABEL[s.setType]}{s.targetRepMin != null ? ` · meta ${repRange(s.targetRepMin, s.targetRepMax ?? s.targetRepMin)}` : ''}</span>
                     <span>{s.weight ?? '—'} kg × {s.reps ?? '—'}</span>
                   </div>
                 ))}

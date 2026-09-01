@@ -49,20 +49,46 @@ function owned<T extends { userId?: string | null }>(e: T | undefined): T | unde
 export const exerciseRepo: ExerciseRepository = {
   all: async () => {
     const u = uid();
-    const all = await db.exercises.toArray();
+    const [all, community] = await Promise.all([db.exercises.toArray(), db.communityExercises.toArray()]);
     // Biblioteca oficial (userId null) + exercicios personalizados do usuario.
-    return all.filter((e) => e.userId == null || e.userId === u);
+    const personal = all.filter((e) => e.userId == null || e.userId === u);
+    return [...personal, ...community.filter((e) => e.authorId !== u)];
   },
-  get: async (id) => owned(await db.exercises.get(id)),
+  get: async (id) => owned((await db.exercises.get(id)) ?? (await db.communityExercises.get(id))),
   put: async (e: Exercise) => {
     const ent = e.isCustom ? { ...e, userId: e.userId ?? uid() } : e;
     await db.exercises.put(ent);
-    if (ent.isCustom) await enqueue('customExercise', ent.id, 'upsert', ent);
+    if (ent.isCustom) {
+      const cloudEnt = ent.media ? {
+        ...ent,
+        pendingPublication: false,
+        media: {
+          ...ent.media,
+          localUrl: null,
+          remoteUrl: ent.media.remoteUrl?.startsWith('http') ? ent.media.remoteUrl : null,
+          remoteUrls: (ent.media.remoteUrls ?? []).filter((url) => url.startsWith('http')),
+        },
+      } : ent;
+      await enqueue('customExercise', ent.id, 'upsert', cloudEnt);
+    }
   },
   remove: async (id) => {
     const e = await db.exercises.get(id);
     await db.exercises.delete(id);
     if (e?.isCustom) await enqueue('customExercise', id, 'delete', { id });
+  },
+};
+
+export const communityExerciseRepo = {
+  all: async () => db.communityExercises.toArray(),
+  get: async (id: string) => db.communityExercises.get(id),
+  put: async (exercise: Exercise) => {
+    await db.communityExercises.put({ ...exercise, userId: null, visibility: 'community' });
+    await enqueue('communityExercise', exercise.id, 'upsert', exercise);
+  },
+  remove: async (id: string) => {
+    await db.communityExercises.delete(id);
+    await enqueue('communityExercise', id, 'delete', { id });
   },
 };
 

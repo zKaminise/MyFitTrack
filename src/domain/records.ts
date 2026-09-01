@@ -23,7 +23,7 @@ export function collectExercisePoints(
       if (ex.performedExerciseId !== exerciseId) continue;
       for (const s of ex.sets) {
         if (!s.completed || s.weight == null || s.reps == null) continue;
-        if (s.setType === 'aquecimento' || s.setType === 'preparacao') continue;
+        if (s.setType === 'aquecimento' || s.setType === 'preparacao' || s.setType === 'ajuste') continue;
         points.push({
           date: session.date,
           sessionId: session.id,
@@ -88,7 +88,7 @@ export function detectNewPRs(
 
   for (const s of newSets) {
     if (!s.completed || s.weight == null || s.reps == null) continue;
-    if (s.setType === 'aquecimento' || s.setType === 'preparacao') continue;
+    if (s.setType === 'aquecimento' || s.setType === 'preparacao' || s.setType === 'ajuste') continue;
     const vol = s.weight * s.reps;
     const orm = estimate1RM(s.weight, s.reps);
 

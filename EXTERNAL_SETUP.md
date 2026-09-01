@@ -144,6 +144,12 @@ npx supabase functions deploy nutrition-search
 
 As migrations `0004_schedule_overrides.sql` e `0005_nutrition.sql` criam os agregados privados e as policies RLS. A busca usa Open Food Facts e não exige chave adicional. A função exige o JWT da conta, valida a busca e identifica o aplicativo perante o provider. Confirme no painel do Supabase que as duas migrations aparecem como aplicadas antes de testar sincronização entre dispositivos.
 
+A migration `0006_set_prescriptions_and_community_exercises.sql` cria o catálogo autoral e o bucket `exercise-media`. Depois do `db push`, publique novamente a função de exclusão para que ela também remova a mídia do usuário:
+
+```bash
+npx supabase functions deploy delete-account
+```
+
 Teste de segurança: entre com duas contas diferentes e confirme que cada uma recebe somente seus overrides, metas, alimentos, refeições e dias alimentares. Não configure service role na Vercel.
 
 ## 10. Smoke test real obrigatorio

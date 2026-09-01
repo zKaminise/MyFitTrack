@@ -2,6 +2,7 @@
 import type { Workout, WorkoutExercise, Exercise, Program } from '@/domain/types';
 import { workoutRepo, programRepo } from '@/repositories/dexie';
 import { uuid, nowISO } from '@/lib/id';
+import { getCurrentUserId } from '@/repositories/context';
 
 export function createWorkout(partial?: Partial<Workout>): Workout {
   return {
@@ -90,6 +91,10 @@ export function createCustomExercise(partial: Partial<Exercise>): Exercise {
     isCustom: true,
     isFavorite: false,
     alternativeIds: partial.alternativeIds ?? [],
+    visibility: partial.visibility ?? 'private',
+    authorId: partial.authorId ?? getCurrentUserId(),
+    authorName: partial.authorName ?? null,
+    sourceExerciseId: partial.sourceExerciseId ?? null,
   };
 }
 

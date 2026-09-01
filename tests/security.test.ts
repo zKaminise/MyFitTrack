@@ -35,4 +35,12 @@ describe('seguranca Supabase', () => {
     expect(source).toContain('admin.auth.admin.deleteUser(userData.user.id)');
     expect(source).not.toContain('req.json()');
   });
+
+  it('catalogo comunitario permite leitura e restringe escrita ao autor', () => {
+    const sql = read('supabase/migrations/0006_set_prescriptions_and_community_exercises.sql');
+    expect(sql).toContain('community_exercises_read');
+    expect(sql).toContain('(select auth.uid()) = author_id');
+    expect(sql).toContain("(storage.foldername(name))[1] = (select auth.uid())::text");
+    expect(sql).toContain("bucket_id = 'exercise-media'");
+  });
 });

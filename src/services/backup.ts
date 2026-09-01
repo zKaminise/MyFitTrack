@@ -7,7 +7,7 @@ import { uuid, nowISO } from '@/lib/id';
 import { getCurrentUserId } from '@/repositories/context';
 import { enqueue } from '@/sync/queue';
 
-const BACKUP_VERSION = 4;
+const BACKUP_VERSION = 5;
 const MAX_AUTO_SNAPSHOTS = 5;
 
 /** Backup dos dados da CONTA ATUAL (nunca inclui dados de outros usuarios). */

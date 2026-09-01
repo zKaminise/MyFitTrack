@@ -27,6 +27,7 @@ function localTable(entityType: SyncEntityType) {
     case 'userFood': return db.userFoods;
     case 'savedMeal': return db.savedMeals;
     case 'nutritionDay': return db.nutritionDays;
+    case 'communityExercise': return db.communityExercises;
   }
 }
 
@@ -128,7 +129,18 @@ async function applyPulled(row: PulledRow): Promise<void> {
   );
   // Last-write-wins por updatedAt.
   if (!local || (row.data?.updatedAt ?? row.updatedAt) >= (local.updatedAt ?? '')) {
-    await table.put(row.data);
+    const data = row.entityType === 'customExercise' && local?.media?.localUrl && !row.data?.media?.localUrl
+      ? {
+          ...row.data,
+          pendingPublication: local.pendingPublication,
+          media: {
+            ...row.data.media,
+            localUrl: local.media.localUrl,
+            remoteUrls: row.data.media?.remoteUrls?.length ? row.data.media.remoteUrls : local.media.remoteUrls,
+          },
+        }
+      : row.data;
+    await table.put(data);
   }
 }
 

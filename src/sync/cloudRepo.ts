@@ -19,6 +19,7 @@ export const TABLE: Record<SyncEntityType, string> = {
   userFood: 'user_foods',
   savedMeal: 'saved_meals',
   nutritionDay: 'nutrition_days',
+  communityExercise: 'community_exercises',
 };
 
 function sb() {
@@ -45,7 +46,19 @@ function rowFor(entityType: SyncEntityType, userId: string, p: any): Record<stri
     case 'personalRecord':
       return { id: p.id, exercise_id: p.exerciseId, type: p.type, ...base };
     case 'customExercise':
-      return { id: p.id, ...base };
+      return {
+        id: p.id,
+        ...base,
+        data: {
+          ...p,
+          media: p.media ? {
+            ...p.media,
+            localUrl: null,
+            remoteUrl: typeof p.media.remoteUrl === 'string' && p.media.remoteUrl.startsWith('http') ? p.media.remoteUrl : null,
+            remoteUrls: (p.media.remoteUrls ?? []).filter((url: string) => url.startsWith('http')),
+          } : undefined,
+        },
+      };
     case 'settings':
       return { user_id: userId, data: p, updated_at: p.updatedAt ?? nowISO() };
     case 'scheduleOverride':
@@ -58,6 +71,8 @@ function rowFor(entityType: SyncEntityType, userId: string, p: any): Record<stri
       return { id: p.id, name: p.name, ...base };
     case 'nutritionDay':
       return { id: p.id, date: p.date, ...base };
+    case 'communityExercise':
+      return { id: p.id, author_id: userId, name: p.name, primary_muscle: p.primaryMuscle, published: true, data: { ...p, userId: null, visibility: 'community' }, updated_at: p.updatedAt ?? nowISO(), deleted_at: p.deletedAt ?? null };
   }
 }
 
@@ -67,6 +82,9 @@ export async function pushOp(item: SyncQueueItem): Promise<void> {
   if (item.operation === 'delete') {
     if (item.entityType === 'settings' || item.entityType === 'nutritionSettings') {
       const { error } = await sb().from(table).delete().eq('user_id', item.userId);
+      if (error) throw error;
+    } else if (item.entityType === 'communityExercise') {
+      const { error } = await sb().from(table).update({ deleted_at: nowISO(), updated_at: nowISO(), published: false }).eq('id', item.entityId).eq('author_id', item.userId);
       if (error) throw error;
     } else {
       const { error } = await sb()
@@ -97,7 +115,9 @@ export async function pullSince(userId: string, since: string | null): Promise<P
   const out: PulledRow[] = [];
   for (const entityType of Object.keys(TABLE) as SyncEntityType[]) {
     const table = TABLE[entityType];
-    let q = sb().from(table).select('*').eq('user_id', userId);
+    let q = entityType === 'communityExercise'
+      ? sb().from(table).select('*')
+      : sb().from(table).select('*').eq('user_id', userId);
     if (since) q = q.gt('updated_at', since);
     const { data, error } = await q;
     if (error) throw error;

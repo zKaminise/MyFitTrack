@@ -108,11 +108,16 @@ export const useSession = create<SessionState>((set, get) => {
           const newSet: SetLog = {
             id: uuid(),
             setIndex: ex.sets.length + 1,
-            setType: 'normal',
+            setType: last?.setType ?? 'normal',
             weight: last ? last.weight : null,
             reps: null,
             targetRir: last?.targetRir ?? null,
             targetRpe: last?.targetRpe ?? null,
+            targetRepMin: last?.targetRepMin ?? ex.repMin,
+            targetRepMax: last?.targetRepMax ?? ex.repMax,
+            restSeconds: last?.restSeconds ?? ex.restSeconds,
+            intraSetRestSeconds: last?.intraSetRestSeconds ?? null,
+            prescriptionNotes: last?.prescriptionNotes,
             completed: false,
             completedAt: null,
           };

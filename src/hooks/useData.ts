@@ -24,8 +24,8 @@ export function useExercises() {
   const uid = useCurrentUserId();
   return useLiveQuery(
     async () => {
-      const all = await db.exercises.toArray();
-      return all.filter((e) => e.userId == null || e.userId === uid);
+      const [all, community] = await Promise.all([db.exercises.toArray(), db.communityExercises.toArray()]);
+      return [...all.filter((e) => e.userId == null || e.userId === uid), ...community.filter((e) => e.authorId !== uid)];
     },
     [uid],
     [],
@@ -36,7 +36,7 @@ export function useExercise(id: string | undefined) {
   const uid = useCurrentUserId();
   return useLiveQuery(async () => {
     if (!id) return undefined;
-    const e = await db.exercises.get(id);
+    const e = (await db.exercises.get(id)) ?? (await db.communityExercises.get(id));
     if (!e) return undefined;
     return e.userId == null || e.userId === uid ? e : undefined;
   }, [id, uid]);

@@ -95,6 +95,8 @@ atomica e evitando historico parcialmente sincronizado.
 
 Alimentação segue a mesma escrita local-first: cada alteração atualiza primeiro o agregado diário no IndexedDB e entra na fila de sync. Itens consumidos guardam snapshot de nutrientes; mudanças no provider ou na refeição salva não reconstroem o histórico. O catálogo externo passa por `NutritionProvider` e a Edge Function `nutrition-search`, enquanto o cache de resultados é local e continua útil offline.
 
+Prescrições individuais de séries pertencem ao agregado `Workout` e são congeladas no agregado `Session`, portanto continuam atômicas e offline-first. Exercícios autorais privados usam o fluxo existente de `custom_exercises`; publicação opcional usa o agregado `communityExercise` e mídia no bucket `exercise-media`.
+
 ## Exclusao de conta
 
 `delete-account` e uma Edge Function autenticada. Ela deriva o usuario do JWT e

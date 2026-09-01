@@ -9,6 +9,7 @@ import type {
   SessionExercise,
   SetLog,
   PersonalRecord,
+  SetPrescription,
 } from '@/domain/types';
 import type { PeriodizationWeek } from '@/domain/types';
 import { uuid, nowISO } from '@/lib/id';
@@ -18,22 +19,25 @@ import { detectNewPRs, collectExercisePoints } from '@/domain/records';
 import { lastWeightUsed } from './history';
 import { getCurrentUserId } from '@/repositories/context';
 import { enqueue } from '@/sync/queue';
+import { prescriptionsFor } from '@/domain/setPrescription';
 
 function makeSets(
-  count: number,
-  setType: SetLog['setType'],
+  prescriptions: SetPrescription[],
   prefillWeight: number | null,
-  targetRir?: number | null,
-  targetRpe?: number | null,
 ): SetLog[] {
-  return Array.from({ length: count }, (_, i) => ({
+  return prescriptions.map((prescription, i) => ({
     id: uuid(),
     setIndex: i + 1,
-    setType,
+    setType: prescription.setType,
     weight: prefillWeight,
     reps: null,
-    targetRir: targetRir ?? null,
-    targetRpe: targetRpe ?? null,
+    targetRir: prescription.targetRir ?? null,
+    targetRpe: prescription.targetRpe ?? null,
+    targetRepMin: prescription.repMin,
+    targetRepMax: prescription.repMax,
+    restSeconds: prescription.restSeconds,
+    intraSetRestSeconds: prescription.intraSetRestSeconds ?? null,
+    prescriptionNotes: prescription.notes,
     completed: false,
     completedAt: null,
   }));
@@ -73,6 +77,12 @@ export function buildSession(args: BuildSessionArgs): Session {
       const exercise = exercisesById.get(we.exerciseId);
       const name = exercise?.name ?? 'Exercicio';
       const p = applyPeriodization(we, periodWeek);
+      const prescribed = we.setPrescriptions?.length
+        ? prescriptionsFor(we)
+        : Array.from({ length: p.sets }, (_, order): SetPrescription => ({
+            id: uuid(), order, repMin: p.repMin, repMax: p.repMax, restSeconds: p.rest,
+            setType: we.setType, targetRir: week(periodWeek, we, 'rir'), targetRpe: week(periodWeek, we, 'rpe'),
+          }));
       const prefill = lastWeightUsed(allSessions, we.exerciseId);
       return {
         id: uuid(),
@@ -83,13 +93,13 @@ export function buildSession(args: BuildSessionArgs): Session {
         performedExerciseName: name,
         status: 'planned',
         substituted: false,
-        targetSets: p.sets,
-        repMin: p.repMin,
-        repMax: p.repMax,
-        restSeconds: p.rest,
+        targetSets: prescribed.length,
+        repMin: Math.min(...prescribed.map((item) => item.repMin)),
+        repMax: Math.max(...prescribed.map((item) => item.repMax)),
+        restSeconds: prescribed[0]?.restSeconds ?? p.rest,
         notes: we.notes,
         supersetId: we.supersetId ?? null,
-        sets: makeSets(p.sets, we.setType, prefill, week(periodWeek, we, 'rir'), week(periodWeek, we, 'rpe')),
+        sets: makeSets(prescribed, prefill),
       };
     });
 
@@ -159,7 +169,7 @@ export function newSessionExercise(exercise: Exercise, order: number, defaultRes
     repMax: 12,
     restSeconds: defaultRest,
     supersetId: null,
-    sets: makeSets(3, 'normal', null),
+    sets: makeSets(Array.from({ length: 3 }, (_, order) => ({ id: uuid(), order, repMin: 10, repMax: 12, restSeconds: defaultRest, setType: 'normal' })), null),
   };
 }
 

@@ -17,6 +17,11 @@ const setLog = z.object({
   reps: z.number().nullable(),
   targetRir: z.number().nullable().optional(),
   targetRpe: z.number().nullable().optional(),
+  targetRepMin: z.number().nullable().optional(),
+  targetRepMax: z.number().nullable().optional(),
+  restSeconds: z.number().nullable().optional(),
+  intraSetRestSeconds: z.number().nullable().optional(),
+  prescriptionNotes: z.string().optional(),
   completed: z.boolean(),
   completedAt: z.string().nullable().optional(),
 });
@@ -67,6 +72,11 @@ const exercise = z.object({
   isCustom: z.boolean(),
   isFavorite: z.boolean(),
   alternativeIds: z.array(z.string()),
+  visibility: z.enum(['private', 'community']).optional(),
+  authorId: z.string().nullable().optional(),
+  authorName: z.string().nullable().optional(),
+  sourceExerciseId: z.string().nullable().optional(),
+  pendingPublication: z.boolean().optional(),
 });
 
 const workout = z.object({

@@ -41,6 +41,7 @@ export class FitDatabase extends Dexie {
   savedMeals!: Table<SavedMeal, string>;
   nutritionDays!: Table<NutritionDay, string>;
   foodCache!: Table<FoodCacheEntry, string>;
+  communityExercises!: Table<Exercise, string>;
 
   constructor() {
     super('fit-system-2');
@@ -130,6 +131,19 @@ export class FitDatabase extends Dexie {
       savedMeals: 'id, userId, name',
       nutritionDays: 'id, userId, date',
       foodCache: 'id, normalizedSearch, updatedAt',
+    });
+
+    // v4 — catalogo comunitario separado dos exercicios privados/oficiais.
+    this.version(4).stores({
+      settings: 'id, userId', exercises: 'id, name, primaryMuscle, equipment, isCustom, userId',
+      workouts: 'id, userId, name, archived', programs: 'id, userId, active',
+      periodizations: 'id, userId', sessions: 'id, userId, date, workoutId, status, startedAt',
+      personalRecords: 'id, userId, exerciseId, type, date', backups: 'id, createdAt, auto, userId',
+      users: 'id, &email', syncQueue: 'id, userId, status, createdAt', syncMeta: 'id',
+      scheduleOverrides: 'id, userId, programId, date, type', nutritionSettings: 'id, userId',
+      userFoods: 'id, userId, name, sourceId', savedMeals: 'id, userId, name',
+      nutritionDays: 'id, userId, date', foodCache: 'id, normalizedSearch, updatedAt',
+      communityExercises: 'id, name, primaryMuscle, equipment, authorId, updatedAt',
     });
   }
 }

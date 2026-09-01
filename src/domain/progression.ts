@@ -29,7 +29,8 @@ function workingSets(sets: ProgressionInput['sets']) {
       s.completed &&
       s.reps != null &&
       s.setType !== 'aquecimento' &&
-      s.setType !== 'preparacao',
+      s.setType !== 'preparacao' &&
+      s.setType !== 'ajuste',
   );
 }
 

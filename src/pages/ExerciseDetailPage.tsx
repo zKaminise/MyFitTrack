@@ -14,6 +14,7 @@ import { useSettings, isFavorite } from '@/store/settingsStore';
 import { exerciseRepo } from '@/repositories/dexie';
 import { nowISO } from '@/lib/id';
 import type { Exercise } from '@/domain/types';
+import { publishPendingExercise } from '@/services/exerciseMediaUpload';
 
 type Metric = 'maxWeight' | 'volume' | 'est1rm';
 
@@ -51,12 +52,14 @@ export default function ExerciseDetailPage() {
       />
 
       <ExerciseMedia exercise={exercise} />
+      {exercise.pendingPublication && <button className="btn btn--primary btn--block" style={{ marginTop: 10 }} onClick={() => void publishPendingExercise(exercise).then(() => toast('✓ Exercício publicado')).catch((error) => toast(error instanceof Error ? error.message : 'Não foi possível publicar'))}>☁ Publicar exercício agora</button>}
       <div style={{ marginTop: 12 }}>
         <h2 style={{ fontSize: 24 }}>{exercise.name}</h2>
         <div className="row wrap" style={{ gap: 8, marginTop: 8 }}>
           <span className="pill pill--accent">{MUSCLE_LABEL[exercise.primaryMuscle]}</span>
           {exercise.secondaryMuscles.map((m) => <span key={m} className="pill">{MUSCLE_LABEL[m]}</span>)}
           <span className="pill">{EQUIPMENT_LABEL[exercise.equipment]}</span>
+          {exercise.visibility === 'community' && <span className="pill">Criado por {exercise.authorName ?? 'membro da comunidade'}</span>}
         </div>
       </div>
 
@@ -139,6 +142,7 @@ export default function ExerciseDetailPage() {
         </>
       )}
 
+      {exercise.visibility !== 'community' && <>
       <div className="section-title">Alternativas preferidas</div>
       <p className="faint" style={{ fontSize: 13, marginTop: 0 }}>Aparecem primeiro em "Substituir somente hoje".</p>
       <div className="stack-sm">
@@ -154,6 +158,7 @@ export default function ExerciseDetailPage() {
         })}
         <button className="btn btn--block" onClick={() => setAddAlt(true)}>+ Adicionar alternativa</button>
       </div>
+      </>}
 
       {history.length > 1 && (
         <>

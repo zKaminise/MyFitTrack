@@ -82,3 +82,18 @@ uso offline" apos um restore.
 - `foodCache`: cache local não pessoal de resultados normalizados do provider.
 
 Somente itens `consumed` entram nos totais. Quantidades e nutrientes são persistidos no item diário para preservar o histórico.
+
+## Prescrição por série
+
+`WorkoutExercise.setPrescriptions[]` é opcional para compatibilidade. Quando ausente, o domínio expande os campos legados (`sets`, `repMin`, `repMax`, `restSeconds`, `setType`) em séries iguais. Quando presente, cada item guarda faixa de repetições, tipo, descanso após a série, RIR/RPE, pausa interna de técnicas como rest-pause e observação própria.
+
+Ao iniciar o treino, cada prescrição vira um `SetLog` com snapshot de `targetRepMin`, `targetRepMax`, `restSeconds`, `setType`, `intraSetRestSeconds` e `prescriptionNotes`. Alterações futuras no template não reescrevem sessões anteriores.
+
+## Exercícios autorais
+
+- `exercises`: biblioteca oficial e exercícios privados da conta.
+- `communityExercises`: cache local do catálogo compartilhado.
+- `community_exercises`: catálogo cloud legível por usuários autenticados; escrita somente pelo autor.
+- `exercise-media`: bucket de mídia própria, com upload restrito ao prefixo `auth.uid()`.
+
+Publicação é opt-in. O exercício privado continua pertencendo ao autor; uma cópia com `visibility: community`, `authorId`, `authorName` e `sourceExerciseId` é publicada no catálogo.

@@ -45,7 +45,10 @@ export const EQUIPMENT_ORDER: Equipment[] = [
 export const SET_TYPE_LABEL: Record<SetType, string> = {
   normal: 'Normal',
   aquecimento: 'Aquecimento',
+  ajuste: 'Ajuste',
+  trabalho: 'Trabalho',
   'drop-set': 'Drop-set',
+  'rest-pause': 'Rest-pause',
   amrap: 'AMRAP',
   falha: 'Falha',
   preparacao: 'Preparacao',

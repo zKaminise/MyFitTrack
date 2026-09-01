@@ -10,6 +10,7 @@ import type { Workout, WorkoutExercise, Exercise } from '@/domain/types';
 import { saveWorkout, duplicateWorkout, deleteWorkout, newWorkoutExercise } from '@/services/workoutService';
 import { EQUIPMENT_LABEL, MUSCLE_LABEL, SET_TYPE_LABEL, repRange } from '@/lib/labels';
 import { uuid } from '@/lib/id';
+import { applyPrescriptionSummary, hasMixedPrescription, prescriptionsFor, resizePrescriptions } from '@/domain/setPrescription';
 
 const COLORS = ['#ff7a1a', '#3aa0ff', '#37c871', '#f5c542', '#c77dff', '#ff5a7a'];
 
@@ -164,7 +165,7 @@ export default function WorkoutEditorPage() {
                   </div>
                   {ex && <span className="workout-exercise-meta">{MUSCLE_LABEL[ex.primaryMuscle]} · {EQUIPMENT_LABEL[ex.equipment]}</span>}
                   <span className="workout-exercise-plan">
-                    <b>{we.sets} × {repRange(we.repMin, we.repMax)}</b><i />{we.restSeconds}s<i />{SET_TYPE_LABEL[we.setType]}
+                    <b>{hasMixedPrescription(we) ? `${we.sets} séries personalizadas` : `${we.sets} × ${repRange(we.repMin, we.repMax)}`}</b><i />{we.restSeconds}s<i />{SET_TYPE_LABEL[we.setType]}
                     {we.targetRir != null ? ` · ${we.targetRir} RIR` : ''}
                     {we.targetRpe != null ? ` · RPE ${we.targetRpe}` : ''}
                   </span>
@@ -263,14 +264,15 @@ function ExerciseConfigSheet({
   onToggleSuperset: () => void;
 }) {
   const [subOpen, setSubOpen] = useState(false);
-  const [draft, setDraft] = useState<WorkoutExercise>(we);
+  const [draft, setDraft] = useState<WorkoutExercise>(() => applyPrescriptionSummary(we, prescriptionsFor(we)));
   const next = exercises[index + 1];
   const grouped = !!we.supersetId && we.supersetId === next?.supersetId;
   const patchDraft = (patch: Partial<WorkoutExercise>) => setDraft((current) => ({ ...current, ...patch }));
+  const updatePrescription = (id: string, patch: Partial<NonNullable<WorkoutExercise['setPrescriptions']>[number]>) =>
+    setDraft((current) => applyPrescriptionSummary(current, (current.setPrescriptions ?? []).map((item) => item.id === id ? { ...item, ...patch } : item)));
   const save = () => {
-    const repMin = Math.max(1, draft.repMin);
-    const repMax = Math.max(repMin, draft.repMax);
-    onSave({ ...draft, repMin, repMax });
+    const next = applyPrescriptionSummary(draft, draft.setPrescriptions ?? prescriptionsFor(draft));
+    onSave(next);
     toast('✓ Alterações salvas');
     onClose();
   };
@@ -284,44 +286,28 @@ function ExerciseConfigSheet({
       )}
       <div className="config-block">
         <label>Séries</label>
-        <Stepper value={draft.sets} min={1} max={20} onChange={(sets) => patchDraft({ sets })} />
+        <Stepper value={draft.sets} min={1} max={20} onChange={(sets) => setDraft((current) => applyPrescriptionSummary(current, resizePrescriptions(current, sets)))} />
       </div>
-      <div className="config-block">
-        <label>Repetições</label>
-        <div className="rep-range-editor">
-          <NumberField label="Mínimo" value={draft.repMin} min={1} onChange={(repMin) => patchDraft({ repMin })} />
-          <span>até</span>
-          <NumberField label="Máximo" value={draft.repMax} min={draft.repMin} onChange={(repMax) => patchDraft({ repMax })} />
-        </div>
-      </div>
-      <div className="config-block">
-        <label>Descanso</label>
-        <div className="rest-presets">
-          {[60, 90, 120, 180].map((seconds) => (
-            <button key={seconds} className={draft.restSeconds === seconds ? 'active' : ''} onClick={() => patchDraft({ restSeconds: seconds })}>{seconds}s</button>
-          ))}
-        </div>
-        <NumberField label="Personalizado (segundos)" value={draft.restSeconds} min={0} step={15} onChange={(restSeconds) => patchDraft({ restSeconds })} />
-      </div>
-      <div className="row" style={{ gap: 10, marginTop: 14 }}>
-        <div className="field grow">
-          <label>Tipo</label>
-          <select className="select" value={draft.setType} onChange={(e) => patchDraft({ setType: e.target.value as WorkoutExercise['setType'] })}>
-            {Object.entries(SET_TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
-        </div>
-      </div>
-      <div className="row" style={{ gap: 10, marginTop: 10 }}>
-        <div className="field grow">
-          <label>RIR alvo (opcional)</label>
-          <input className="input" type="number" inputMode="numeric" value={draft.targetRir ?? ''} placeholder="—"
-            onChange={(e) => patchDraft({ targetRir: e.target.value === '' ? null : Number(e.target.value) })} />
-        </div>
-        <div className="field grow">
-          <label>RPE alvo (opcional)</label>
-          <input className="input" type="number" inputMode="decimal" value={draft.targetRpe ?? ''} placeholder="—"
-            onChange={(e) => patchDraft({ targetRpe: e.target.value === '' ? null : Number(e.target.value) })} />
-        </div>
+      <div className="config-block set-prescription-editor">
+        <div className="row-between"><label>Configuração por série</label><span className="pill pill--accent">{draft.sets} séries</span></div>
+        <p className="faint">Defina faixa, tipo e descanso de cada série. O timer usa o descanso da série concluída.</p>
+        {(draft.setPrescriptions ?? []).map((item) => (
+          <div className="set-prescription-card" key={item.id}>
+            <div className="set-prescription-card__head"><strong>Série {item.order + 1}</strong><span>{repRange(item.repMin, item.repMax)} reps · {item.restSeconds}s</span></div>
+            <div className="set-prescription-grid">
+              <div className="field"><label>Tipo</label><select className="select" value={item.setType} onChange={(e) => updatePrescription(item.id, { setType: e.target.value as WorkoutExercise['setType'] })}>{Object.entries(SET_TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></div>
+              <NumberField label="Reps mín." value={item.repMin} min={1} onChange={(repMin) => updatePrescription(item.id, { repMin, repMax: Math.max(repMin, item.repMax) })} />
+              <NumberField label="Reps máx." value={item.repMax} min={item.repMin} onChange={(repMax) => updatePrescription(item.id, { repMax })} />
+              <NumberField label="Descanso (s)" value={item.restSeconds} min={0} step={5} onChange={(restSeconds) => updatePrescription(item.id, { restSeconds })} />
+            </div>
+            <div className="set-prescription-grid set-prescription-grid--optional">
+              <NumberField label="RIR" value={item.targetRir ?? 0} min={0} onChange={(targetRir) => updatePrescription(item.id, { targetRir })} />
+              <NumberField label="RPE" value={item.targetRpe ?? 0} min={0} onChange={(targetRpe) => updatePrescription(item.id, { targetRpe })} />
+              {item.setType === 'rest-pause' && <NumberField label="Pausa interna (s)" value={item.intraSetRestSeconds ?? 10} min={1} step={5} onChange={(intraSetRestSeconds) => updatePrescription(item.id, { intraSetRestSeconds })} />}
+            </div>
+            <input className="input" value={item.notes ?? ''} placeholder="Instrução desta série (opcional)" onChange={(e) => updatePrescription(item.id, { notes: e.target.value })} />
+          </div>
+        ))}
       </div>
       <div className="field" style={{ marginTop: 10 }}>
         <label>Observacao do exercicio</label>

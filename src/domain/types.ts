@@ -39,7 +39,16 @@ export type Equipment =
   | 'banco'
   | 'sem-equipamento';
 
-export type SetType = 'normal' | 'aquecimento' | 'drop-set' | 'amrap' | 'falha' | 'preparacao';
+export type SetType =
+  | 'normal'
+  | 'aquecimento'
+  | 'ajuste'
+  | 'trabalho'
+  | 'drop-set'
+  | 'rest-pause'
+  | 'amrap'
+  | 'falha'
+  | 'preparacao';
 
 export interface WithMeta {
   id: ID;
@@ -91,6 +100,27 @@ export interface Exercise extends WithMeta, Ownable {
   isFavorite: boolean;
   /** Alternativas preferidas (ids de exercicios) para "substituir somente hoje". */
   alternativeIds: ID[];
+  /** Publicacao opcional de um exercicio autoral no catalogo compartilhado. */
+  visibility?: 'private' | 'community';
+  authorId?: ID | null;
+  authorName?: string | null;
+  sourceExerciseId?: ID | null;
+  pendingPublication?: boolean;
+}
+
+/** Prescricao de uma serie individual dentro do template. */
+export interface SetPrescription {
+  id: ID;
+  order: number;
+  repMin: number;
+  repMax: number;
+  restSeconds: number;
+  setType: SetType;
+  targetRir?: number | null;
+  targetRpe?: number | null;
+  /** Pausa interna da tecnica, ex.: rest-pause de 10 segundos. */
+  intraSetRestSeconds?: number | null;
+  notes?: string;
 }
 
 /** Configuracao de um exercicio dentro de um template de treino. */
@@ -108,6 +138,8 @@ export interface WorkoutExercise {
   notes?: string;
   /** Exercicios agrupados em superset compartilham o mesmo supersetId. */
   supersetId?: ID | null;
+  /** Quando presente, cada serie usa sua propria meta/tipo/descanso. */
+  setPrescriptions?: SetPrescription[];
 }
 
 /** Template de treino (Treino A, B, C...). */
@@ -219,6 +251,11 @@ export interface SetLog {
   reps: number | null;
   targetRir?: number | null;
   targetRpe?: number | null;
+  targetRepMin?: number | null;
+  targetRepMax?: number | null;
+  restSeconds?: number | null;
+  intraSetRestSeconds?: number | null;
+  prescriptionNotes?: string;
   completed: boolean;
   completedAt?: ISODateTime | null;
 }
@@ -426,7 +463,8 @@ export type SyncEntityType =
   | 'nutritionSettings'
   | 'userFood'
   | 'savedMeal'
-  | 'nutritionDay';
+  | 'nutritionDay'
+  | 'communityExercise';
 
 export type SyncOperation = 'upsert' | 'delete';
 export type SyncItemStatus = 'pending' | 'syncing' | 'error';

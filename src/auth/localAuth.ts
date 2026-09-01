@@ -128,7 +128,7 @@ export const localAuthProvider: AuthProvider = {
 export async function deleteLocalUserData(userId: string): Promise<void> {
   await db.transaction(
     'rw',
-    [db.workouts, db.programs, db.periodizations, db.sessions, db.personalRecords, db.settings, db.exercises, db.backups, db.syncQueue, db.syncMeta, db.scheduleOverrides, db.nutritionSettings, db.userFoods, db.savedMeals, db.nutritionDays],
+    [db.workouts, db.programs, db.periodizations, db.sessions, db.personalRecords, db.settings, db.exercises, db.backups, db.syncQueue, db.syncMeta, db.scheduleOverrides, db.nutritionSettings, db.userFoods, db.savedMeals, db.nutritionDays, db.communityExercises],
     async () => {
       await db.workouts.where('userId').equals(userId).delete();
       await db.programs.where('userId').equals(userId).delete();
@@ -145,6 +145,7 @@ export async function deleteLocalUserData(userId: string): Promise<void> {
       await db.userFoods.where('userId').equals(userId).delete();
       await db.savedMeals.where('userId').equals(userId).delete();
       await db.nutritionDays.where('userId').equals(userId).delete();
+      await db.communityExercises.where('authorId').equals(userId).delete();
     },
   );
 }
