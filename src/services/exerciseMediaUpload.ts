@@ -1,8 +1,9 @@
 import type { Exercise, ExerciseMedia } from '@/domain/types';
 import { supabase } from '@/lib/supabase';
 import { getCurrentUserId } from '@/repositories/context';
-import { uuid, stableUuid, nowISO } from '@/lib/id';
+import { uuid, nowISO } from '@/lib/id';
 import { communityExerciseRepo, exerciseRepo } from '@/repositories/dexie';
+import { toCommunityExercise } from '@/services/communityExercise';
 
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 const ALLOWED = new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm']);
@@ -37,16 +38,45 @@ export async function buildCustomExerciseMedia(exerciseId: string, input: {
   endImage?: File | null;
   video?: File | null;
 }): Promise<ExerciseMedia | undefined> {
+  return updateCustomExerciseMedia(exerciseId, undefined, input);
+}
+
+/** Mantém a mídia existente e substitui somente os arquivos escolhidos na edição. */
+export async function updateCustomExerciseMedia(exerciseId: string, current: ExerciseMedia | undefined, input: {
+  startImage?: File | null;
+  endImage?: File | null;
+  video?: File | null;
+}): Promise<ExerciseMedia | undefined> {
   if (input.video) {
     const url = await upload(exerciseId, 'video', input.video);
     return { type: 'video', remoteUrl: url.startsWith('http') ? url : null, localUrl: url.startsWith('data:') ? url : null, remoteUrls: url.startsWith('http') ? [url] : [], source: url.startsWith('http') ? 'MyFitTrack Community' : 'local' };
   }
-  const files = [input.startImage, input.endImage].filter((file): file is File => Boolean(file));
-  if (!files.length) return undefined;
-  const urls = await Promise.all(files.map((file, index) => upload(exerciseId, index === 0 ? 'inicio' : 'final', file)));
-  const localUrl = urls.find((url) => url.startsWith('data:')) ?? null;
+  if (!input.startImage && !input.endImage) return current;
+
+  const previous = current?.type === 'image'
+    ? (current.remoteUrls?.length
+        ? [...current.remoteUrls]
+        : [current.localUrl ?? current.remoteUrl].filter((url): url is string => Boolean(url)))
+    : [];
+  const startUrl = input.startImage ? await upload(exerciseId, 'inicio', input.startImage) : previous[0];
+  const endUrl = input.endImage ? await upload(exerciseId, 'final', input.endImage) : previous[1];
+  const urls = [startUrl, endUrl].filter((url): url is string => Boolean(url));
+  const first = urls[0];
   const hosted = urls.every((url) => url.startsWith('http'));
-  return { type: 'image', remoteUrl: hosted ? urls[0] : null, remoteUrls: urls, localUrl, source: hosted ? 'MyFitTrack Community' : 'local' };
+  return {
+    type: 'image',
+    remoteUrl: first?.startsWith('http') ? first : null,
+    remoteUrls: urls,
+    localUrl: first?.startsWith('data:') ? first : null,
+    source: hosted ? 'MyFitTrack Community' : 'local',
+  };
+}
+
+export function hasUnuploadedMedia(media: ExerciseMedia | undefined): boolean {
+  return Boolean(
+    media?.localUrl?.startsWith('data:')
+    || media?.remoteUrls?.some((url) => url.startsWith('data:')),
+  );
 }
 
 async function fileFromDataUrl(value: string, name: string): Promise<File> {
@@ -57,23 +87,22 @@ async function fileFromDataUrl(value: string, name: string): Promise<File> {
 /** Envia uma publicacao criada offline e cria a copia comunitaria. */
 export async function publishPendingExercise(exercise: Exercise): Promise<void> {
   if (!supabase || typeof navigator === 'undefined' || !navigator.onLine) throw new Error('Conecte-se à internet para publicar.');
+  const userId = getCurrentUserId();
+  if (!userId) throw new Error('Entre novamente para publicar o exercício.');
   let media = exercise.media;
-  if (media?.localUrl?.startsWith('data:')) {
+  if (media && hasUnuploadedMedia(media)) {
     if (media.type === 'video') {
-      media = await buildCustomExerciseMedia(exercise.id, { video: await fileFromDataUrl(media.localUrl, 'execucao.mp4') });
+      const localVideo = media.localUrl ?? media.remoteUrls?.find((url) => url.startsWith('data:'));
+      if (localVideo) media = await updateCustomExerciseMedia(exercise.id, media, { video: await fileFromDataUrl(localVideo, 'execucao.mp4') });
     } else {
-      const localImages = (media.remoteUrls ?? [media.localUrl]).filter((url) => url.startsWith('data:'));
-      media = await buildCustomExerciseMedia(exercise.id, {
-        startImage: localImages[0] ? await fileFromDataUrl(localImages[0], 'inicio.jpg') : null,
-        endImage: localImages[1] ? await fileFromDataUrl(localImages[1], 'final.jpg') : null,
+      const urls = media.remoteUrls?.length ? media.remoteUrls : media.localUrl ? [media.localUrl] : [];
+      media = await updateCustomExerciseMedia(exercise.id, media, {
+        startImage: urls[0]?.startsWith('data:') ? await fileFromDataUrl(urls[0], 'inicio.jpg') : null,
+        endImage: urls[1]?.startsWith('data:') ? await fileFromDataUrl(urls[1], 'final.jpg') : null,
       });
     }
   }
   const updated: Exercise = { ...exercise, media, pendingPublication: false, updatedAt: nowISO() };
   await exerciseRepo.put(updated);
-  await communityExerciseRepo.put({
-    ...updated,
-    id: stableUuid(`community:${exercise.id}`), userId: null, visibility: 'community',
-    sourceExerciseId: exercise.id,
-  });
+  await communityExerciseRepo.put(toCommunityExercise(updated, { id: userId, name: updated.authorName }));
 }

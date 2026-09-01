@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Exercise } from '@/domain/types';
 import { resolveMedia } from '@/lib/media';
 
@@ -25,6 +25,12 @@ export function ExerciseMedia({ exercise }: { exercise: Exercise }) {
   const [failed, setFailed] = useState(false);
   // Alterna entre posicao inicial/final quando ha 2 imagens (demonstracao).
   const [frame, setFrame] = useState(0);
+
+  useEffect(() => {
+    setLoaded(false);
+    setFailed(false);
+    setFrame(0);
+  }, [exercise.id, exercise.updatedAt]);
 
   if (media.type === 'none' || failed) {
     return <div className="media-box"><Placeholder large /></div>;
@@ -84,6 +90,7 @@ export function ExerciseThumb({ exercise, size = 48 }: { exercise: Exercise; siz
   const media = resolveMedia(exercise);
   const [failed, setFailed] = useState(false);
   const url = media.type !== 'none' ? media.url : undefined;
+  useEffect(() => setFailed(false), [url]);
   return (
     <div className="media-thumb" style={{ width: size, height: size }}>
       {url && !failed ? (

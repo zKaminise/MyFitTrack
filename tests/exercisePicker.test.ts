@@ -69,4 +69,10 @@ describe('modelo do seletor de exercicios', () => {
     expect(isExerciseAlreadyInWorkout(['bench'], 'bench')).toBe(true);
     expect(isExerciseAlreadyInWorkout(['bench'], 'rope')).toBe(false);
   });
+
+  it('mantem o filtro Meus restrito aos exercicios privados da conta', () => {
+    const own = { ...exercise('own', 'Meu exercício', 'peito', 'maquina'), isCustom: true, visibility: 'private' as const };
+    const community = { ...exercise('community', 'Exercício comunitário', 'peito', 'maquina'), isCustom: true, visibility: 'community' as const };
+    expect(filterExercises([...library, own, community], { query: '', category: 'custom', equipment: 'all' }, () => false).map((item) => item.id)).toEqual(['own']);
+  });
 });

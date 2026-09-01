@@ -1,19 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useExercises } from '@/hooks/useData';
+import { useCommunityPublication, useExercises } from '@/hooks/useData';
 import { BackHeader } from '@/ui/PageHeader';
-import { Sheet } from '@/ui/components';
-import { toast } from '@/ui/feedback';
-import type { Equipment, Exercise, MuscleGroup } from '@/domain/types';
-import { MUSCLE_LABEL, MUSCLE_ORDER, EQUIPMENT_LABEL, EQUIPMENT_ORDER } from '@/lib/labels';
+import type { Exercise, MuscleGroup } from '@/domain/types';
+import { MUSCLE_LABEL, MUSCLE_ORDER, EQUIPMENT_LABEL } from '@/lib/labels';
 import { normalizeText } from '@/lib/text';
-import { createCustomExercise } from '@/services/workoutService';
-import { communityExerciseRepo, exerciseRepo } from '@/repositories/dexie';
 import { ExerciseThumb } from '@/components/ExerciseMedia';
 import { useSettings, isFavorite } from '@/store/settingsStore';
-import { useAuth } from '@/store/authStore';
-import { buildCustomExerciseMedia } from '@/services/exerciseMediaUpload';
-import { stableUuid } from '@/lib/id';
+import { CustomExerciseSheet } from '@/components/CustomExerciseSheet';
 
 type Filter = 'all' | 'fav' | 'custom' | 'community' | MuscleGroup;
 
@@ -25,6 +19,8 @@ export default function ExerciseLibraryPage() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Exercise | null>(null);
+  const editingPublication = useCommunityPublication(editing?.id);
 
   const filtered = useMemo(() => {
     const q = normalizeText(query.trim());
@@ -60,6 +56,7 @@ export default function ExerciseLibraryPage() {
               <div className="li-title">{e.name}</div>
               <div className="li-sub">{MUSCLE_LABEL[e.primaryMuscle]} · {EQUIPMENT_LABEL[e.equipment]}{e.visibility === 'community' ? ` · por ${e.authorName ?? 'membro'}` : e.isCustom ? ' · meu' : ''}</div>
             </button>
+            {e.isCustom && e.visibility !== 'community' && <button className="icon-btn" onClick={() => setEditing(e)} aria-label={`Editar ${e.name}`}>✎</button>}
             <button className="icon-btn" onClick={() => toggleFavorite(e.id)} aria-label="Favoritar" style={{ color: isFavorite(settings, e.id) ? 'var(--yellow)' : 'var(--text-faint)' }}>
               {isFavorite(settings, e.id) ? '★' : '☆'}
             </button>
@@ -67,83 +64,8 @@ export default function ExerciseLibraryPage() {
         ))}
       </div>
 
-      {creating && <CreateExerciseSheet onClose={() => setCreating(false)} onCreated={(id) => { setCreating(false); nav(`/exercises/${id}`); }} />}
+      {creating && <CustomExerciseSheet onClose={() => setCreating(false)} onSaved={(exercise) => { setCreating(false); nav(`/exercises/${exercise.id}`); }} />}
+      {editing && <CustomExerciseSheet exercise={editing} published={editingPublication === undefined ? undefined : editingPublication?.visibility === 'community'} onClose={() => setEditing(null)} onSaved={() => setEditing(null)} />}
     </div>
-  );
-}
-
-function CreateExerciseSheet({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
-  const user = useAuth((state) => state.user);
-  const [name, setName] = useState('');
-  const [primary, setPrimary] = useState<MuscleGroup>('peito');
-  const [equipment, setEquipment] = useState<Equipment>('maquina');
-  const [instructions, setInstructions] = useState('');
-  const [startImage, setStartImage] = useState<File | null>(null);
-  const [endImage, setEndImage] = useState<File | null>(null);
-  const [video, setVideo] = useState<File | null>(null);
-  const [publish, setPublish] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  async function save() {
-    if (!name.trim()) { toast('Informe o nome'); return; }
-    setSaving(true);
-    try {
-      let ex: Exercise = createCustomExercise({
-        name: name.trim(), primaryMuscle: primary, equipment,
-        instructions: instructions.trim() || undefined,
-        instructionsList: instructions.split(/\r?\n/).map((step) => step.trim()).filter(Boolean),
-        authorId: user?.id ?? null, authorName: user?.name ?? null,
-      });
-      const media = await buildCustomExerciseMedia(ex.id, { startImage, endImage, video });
-      if (media) ex = { ...ex, media };
-      const publishNow = publish && user && !(media?.localUrl?.startsWith('data:'));
-      ex = { ...ex, pendingPublication: Boolean(publish && !publishNow) };
-      await exerciseRepo.put(ex);
-      if (publishNow && user) {
-        await communityExerciseRepo.put({
-          ...ex,
-          id: stableUuid(`community:${ex.id}`),
-          userId: null,
-          visibility: 'community',
-          authorId: user.id,
-          authorName: user.name,
-          sourceExerciseId: ex.id,
-        });
-      }
-      toast(publishNow ? 'Exercício criado e publicado' : publish ? 'Salvo no dispositivo; publique quando estiver online' : 'Exercício privado criado');
-      onCreated(ex.id);
-    } catch (error) {
-      toast(error instanceof Error ? error.message : 'Não foi possível criar o exercício');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Sheet open onClose={onClose} title="Criar meu exercicio">
-      <div className="stack">
-        <div className="field"><label>Nome</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} autoFocus /></div>
-        <div className="field">
-          <label>Musculo principal</label>
-          <select className="select" value={primary} onChange={(e) => setPrimary(e.target.value as MuscleGroup)}>
-            {MUSCLE_ORDER.map((m) => <option key={m} value={m}>{MUSCLE_LABEL[m]}</option>)}
-          </select>
-        </div>
-        <div className="field">
-          <label>Equipamento</label>
-          <select className="select" value={equipment} onChange={(e) => setEquipment(e.target.value as Equipment)}>
-            {EQUIPMENT_ORDER.map((eq) => <option key={eq} value={eq}>{EQUIPMENT_LABEL[eq]}</option>)}
-          </select>
-        </div>
-        <div className="field"><label>Como executar</label><textarea className="textarea" value={instructions} placeholder="Escreva um passo por linha..." onChange={(e) => setInstructions(e.target.value)} /></div>
-        <div className="custom-media-fields">
-          <label><span>Imagem inicial</span><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setStartImage(e.target.files?.[0] ?? null)} /><small>{startImage?.name ?? 'JPG, PNG, WebP ou GIF'}</small></label>
-          <label><span>Imagem final</span><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setEndImage(e.target.files?.[0] ?? null)} /><small>{endImage?.name ?? 'Opcional'}</small></label>
-          <label className="custom-media-video"><span>Ou vídeo da execução</span><input type="file" accept="video/mp4,video/webm" onChange={(e) => setVideo(e.target.files?.[0] ?? null)} /><small>{video?.name ?? 'MP4 ou WebM, até 15 MB'}</small></label>
-        </div>
-        <label className="publish-exercise-toggle"><input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} /><span><strong>Disponibilizar para outros usuários</strong><small>Seu nome aparecerá como autor. Use somente mídia própria ou autorizada.</small></span></label>
-        <button className="btn btn--primary btn--block" disabled={saving} onClick={save}>{saving ? 'ENVIANDO...' : publish ? 'SALVAR E PUBLICAR' : 'SALVAR EXERCÍCIO'}</button>
-      </div>
-    </Sheet>
   );
 }

@@ -24,6 +24,7 @@
 - observações do exercício destacadas durante a execução;
 - exercícios autorais com instruções, imagens início/fim ou vídeo e publicação opcional com autoria;
 - catálogo comunitário com RLS de escrita por autor e cache local.
+- edição posterior dos exercícios autorais, preservação da mídia existente e atualização comunitária propagada pelo mesmo UUID.
 
 ## NEEDS EXTERNAL CONFIGURATION
 

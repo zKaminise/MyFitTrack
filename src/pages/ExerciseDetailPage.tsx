@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useExercise, useExercises, useCompletedSessions } from '@/hooks/useData';
+import { useCommunityPublication, useExercise, useExercises, useCompletedSessions } from '@/hooks/useData';
 import { BackHeader } from '@/ui/PageHeader';
 import { ExerciseLineChart } from '@/components/Charts';
 import { ExerciseMedia } from '@/components/ExerciseMedia';
@@ -15,12 +15,15 @@ import { exerciseRepo } from '@/repositories/dexie';
 import { nowISO } from '@/lib/id';
 import type { Exercise } from '@/domain/types';
 import { publishPendingExercise } from '@/services/exerciseMediaUpload';
+import { useAuth } from '@/store/authStore';
+import { CustomExerciseSheet } from '@/components/CustomExerciseSheet';
 
 type Metric = 'maxWeight' | 'volume' | 'est1rm';
 
 export default function ExerciseDetailPage() {
   const { id } = useParams();
   const exercise = useExercise(id);
+  const publication = useCommunityPublication(id);
   const allExercises = useExercises();
   const sessions = useCompletedSessions();
   const settings = useSettings((s) => s.settings);
@@ -28,6 +31,8 @@ export default function ExerciseDetailPage() {
   const fav = isFavorite(settings, id ?? '');
   const [metric, setMetric] = useState<Metric>('maxWeight');
   const [addAlt, setAddAlt] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const user = useAuth((state) => state.user);
 
   const history = useMemo(() => (id ? exerciseHistory(sessions, id) : []), [sessions, id]);
   const chart = useMemo(() => (id ? exerciseChartData(sessions, id) : []), [sessions, id]);
@@ -37,6 +42,11 @@ export default function ExerciseDetailPage() {
 
   const exMap = new Map(allExercises.map((e) => [e.id, e]));
   const last = history[0];
+  const canEdit = exercise.isCustom
+    && exercise.visibility !== 'community'
+    && exercise.userId === user?.id;
+  const isPublished = publication?.visibility === 'community';
+  const publicationState = publication === undefined ? undefined : isPublished;
 
   async function updateAlts(ids: string[]) {
     await exerciseRepo.put({ ...exercise!, alternativeIds: ids, updatedAt: nowISO() });
@@ -48,7 +58,7 @@ export default function ExerciseDetailPage() {
     <div className="screen">
       <BackHeader
         title="Exercicio"
-        right={<button className="icon-btn" onClick={() => toggleFav(exercise.id)} style={{ color: fav ? 'var(--yellow)' : 'var(--text-faint)' }}>{fav ? '★' : '☆'}</button>}
+        right={<div className="row" style={{ gap: 6 }}>{canEdit && <button className="btn btn--sm" onClick={() => setEditing(true)}>Editar</button>}<button className="icon-btn" onClick={() => toggleFav(exercise.id)} style={{ color: fav ? 'var(--yellow)' : 'var(--text-faint)' }}>{fav ? '★' : '☆'}</button></div>}
       />
 
       <ExerciseMedia exercise={exercise} />
@@ -59,6 +69,7 @@ export default function ExerciseDetailPage() {
           <span className="pill pill--accent">{MUSCLE_LABEL[exercise.primaryMuscle]}</span>
           {exercise.secondaryMuscles.map((m) => <span key={m} className="pill">{MUSCLE_LABEL[m]}</span>)}
           <span className="pill">{EQUIPMENT_LABEL[exercise.equipment]}</span>
+          {canEdit && isPublished && <span className="pill pill--accent">Compartilhado</span>}
           {exercise.visibility === 'community' && <span className="pill">Criado por {exercise.authorName ?? 'membro da comunidade'}</span>}
         </div>
       </div>
@@ -186,6 +197,14 @@ export default function ExerciseDetailPage() {
           setAddAlt(false);
         }}
       />
+      {editing && (
+        <CustomExerciseSheet
+          exercise={exercise}
+          published={publicationState}
+          onClose={() => setEditing(false)}
+          onSaved={() => setEditing(false)}
+        />
+      )}
     </div>
   );
 }

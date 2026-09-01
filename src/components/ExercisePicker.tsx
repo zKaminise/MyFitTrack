@@ -208,7 +208,7 @@ function ExerciseRow({
         <span className="picker-card__copy">
           <strong>{favorite && <span className="picker-favorite">★ </span>}{exercise.name}</strong>
           <span>{MUSCLE_LABEL[exercise.primaryMuscle]}</span>
-          <small><b>Ver execução</b> · {EQUIPMENT_LABEL[exercise.equipment]}{exercise.isCustom ? ' · Meu exercício' : ''}</small>
+          <small><b>Ver execução</b> · {EQUIPMENT_LABEL[exercise.equipment]}{exercise.visibility === 'community' ? ` · Comunidade · ${exercise.authorName ?? 'membro'}` : exercise.isCustom ? ' · Meu exercício' : ''}</small>
         </span>
       </button>
       {existing ? (

@@ -5,6 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/db/database';
 import type { Exercise } from '@/domain/types';
 import { useCurrentUserId } from '@/store/authStore';
+import { communityExerciseId } from '@/services/communityExercise';
 
 export function useWorkouts() {
   const uid = useCurrentUserId();
@@ -40,6 +41,15 @@ export function useExercise(id: string | undefined) {
     if (!e) return undefined;
     return e.userId == null || e.userId === uid ? e : undefined;
   }, [id, uid]);
+}
+
+export function useCommunityPublication(sourceExerciseId: string | undefined) {
+  return useLiveQuery(
+    async () => sourceExerciseId
+      ? (await db.communityExercises.get(communityExerciseId(sourceExerciseId))) ?? null
+      : null,
+    [sourceExerciseId],
+  );
 }
 
 export function useExerciseMap(): Map<string, Exercise> {

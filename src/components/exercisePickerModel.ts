@@ -26,7 +26,7 @@ export function filterExercises(
     .filter((exercise) => !exercise.deletedAt)
     .filter((exercise) => {
       if (filters.category === 'fav') return isFav(exercise.id);
-      if (filters.category === 'custom') return exercise.isCustom;
+      if (filters.category === 'custom') return exercise.isCustom && exercise.visibility !== 'community';
       if (filters.category !== 'all') {
         // Os chips representam o grupo principal. Músculos secundários continuam
         // disponíveis na busca textual, mas não ampliam o resultado do filtro.

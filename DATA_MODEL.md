@@ -97,3 +97,5 @@ Ao iniciar o treino, cada prescrição vira um `SetLog` com snapshot de `targetR
 - `exercise-media`: bucket de mídia própria, com upload restrito ao prefixo `auth.uid()`.
 
 Publicação é opt-in. O exercício privado continua pertencendo ao autor; uma cópia com `visibility: community`, `authorId`, `authorName` e `sourceExerciseId` é publicada no catálogo.
+
+O UUID da cópia comunitária é estável e derivado do exercício privado. Edições posteriores fazem `upsert` no mesmo registro, portanto treinos de outras contas recebem novas instruções, nomes e mídias sem trocar o `exerciseId`. Imagens inicial/final e vídeo podem ser adicionados ou substituídos depois da criação; arquivos não selecionados durante a edição são preservados.
