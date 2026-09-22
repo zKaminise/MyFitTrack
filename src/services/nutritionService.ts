@@ -71,6 +71,7 @@ async function getOrCreateDay(date: string): Promise<NutritionDay> {
 }
 
 export async function cacheFood(food: FoodReference, search = ''): Promise<void> {
+  if (food.source === 'manual' || food.source === 'taco') return;
   const stamp = nowISO();
   await foodCacheRepo.put({
     id: food.id,
@@ -96,6 +97,7 @@ export async function addFoodToDay(args: {
   unit: FoodUnit;
   status: FoodLogStatus;
 }): Promise<FoodLogItem> {
+  if (!Number.isFinite(args.quantity) || args.quantity <= 0) throw new Error('Informe uma quantidade maior que zero.');
   const day = await getOrCreateDay(args.date);
   const stamp = nowISO();
   const item: FoodLogItem = {
@@ -124,6 +126,7 @@ export async function addSavedMealToDay(args: {
   portions: number;
   status: FoodLogStatus;
 }): Promise<FoodLogItem> {
+  if (!Number.isFinite(args.portions) || args.portions <= 0) throw new Error('Informe uma quantidade maior que zero.');
   const day = await getOrCreateDay(args.date);
   const stamp = nowISO();
   const item: FoodLogItem = {

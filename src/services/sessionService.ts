@@ -16,20 +16,20 @@ import { uuid, nowISO } from '@/lib/id';
 import { todayISO } from '@/domain/dates';
 import { db } from '@/db/database';
 import { detectNewPRs, collectExercisePoints } from '@/domain/records';
-import { lastWeightUsed } from './history';
+import { performanceReferences, type SetReference } from '@/domain/performanceReference';
 import { getCurrentUserId } from '@/repositories/context';
 import { enqueue } from '@/sync/queue';
 import { prescriptionsFor } from '@/domain/setPrescription';
 
 function makeSets(
   prescriptions: SetPrescription[],
-  prefillWeight: number | null,
+  references: (SetReference | null)[] = [],
 ): SetLog[] {
   return prescriptions.map((prescription, i) => ({
     id: uuid(),
     setIndex: i + 1,
     setType: prescription.setType,
-    weight: prefillWeight,
+    weight: references[i]?.weight ?? null,
     reps: null,
     targetRir: prescription.targetRir ?? null,
     targetRpe: prescription.targetRpe ?? null,
@@ -83,7 +83,7 @@ export function buildSession(args: BuildSessionArgs): Session {
             id: uuid(), order, repMin: p.repMin, repMax: p.repMax, restSeconds: p.rest,
             setType: we.setType, targetRir: week(periodWeek, we, 'rir'), targetRpe: week(periodWeek, we, 'rpe'),
           }));
-      const prefill = lastWeightUsed(allSessions, we.exerciseId);
+      const references = performanceReferences(allSessions, we.exerciseId, prescribed);
       return {
         id: uuid(),
         order: idx,
@@ -99,7 +99,7 @@ export function buildSession(args: BuildSessionArgs): Session {
         restSeconds: prescribed[0]?.restSeconds ?? p.rest,
         notes: we.notes,
         supersetId: we.supersetId ?? null,
-        sets: makeSets(prescribed, prefill),
+        sets: makeSets(prescribed, references),
       };
     });
 
@@ -169,7 +169,7 @@ export function newSessionExercise(exercise: Exercise, order: number, defaultRes
     repMax: 12,
     restSeconds: defaultRest,
     supersetId: null,
-    sets: makeSets(Array.from({ length: 3 }, (_, order) => ({ id: uuid(), order, repMin: 10, repMax: 12, restSeconds: defaultRest, setType: 'normal' })), null),
+    sets: makeSets(Array.from({ length: 3 }, (_, order) => ({ id: uuid(), order, repMin: 10, repMax: 12, restSeconds: defaultRest, setType: 'normal' }))),
   };
 }
 

@@ -62,7 +62,8 @@ export function sumNutrients(values: NutrientValues[]): NutrientValues {
   return values.reduce(addNutrients, ZERO_NUTRIENTS);
 }
 
-export function savedMealTotals(meal: Pick<SavedMeal, 'items'>): NutrientValues {
+export function savedMealTotals(meal: Pick<SavedMeal, 'items' | 'manualNutrients'>): NutrientValues {
+  if (meal.manualNutrients) return meal.manualNutrients;
   return sumNutrients(meal.items.map((item) => item.nutrients));
 }
 

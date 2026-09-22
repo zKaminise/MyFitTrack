@@ -1,6 +1,7 @@
 import type { FoodReference, FoodUnit } from '@/domain/types';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { NutritionProvider } from './types';
+import { hasCompleteMacros } from '@/domain/nutrition';
 
 interface OffProduct {
   code?: string;
@@ -72,14 +73,14 @@ export const openFoodFactsProvider: NutritionProvider = {
         body: { query },
       });
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-      if (error) throw error;
-      products = (data?.products ?? []) as OffProduct[];
+      // Mantém busca pública funcionando quando a Edge Function ainda não foi publicada.
+      products = error ? await directSearch(query, signal) : (data?.products ?? []) as OffProduct[];
     } else {
       products = await directSearch(query, signal);
     }
     return products
       .map(normalizeOpenFoodFactsProduct)
-      .filter((food): food is FoodReference => food !== null && food.caloriesPer100g !== null);
+      .filter((food): food is FoodReference => food !== null && hasCompleteMacros(food));
   },
 
   async getFood(id, signal) {

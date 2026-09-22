@@ -3,6 +3,8 @@ import { useAuth } from '@/store/authStore';
 import { SyncIndicator } from '@/components/SyncIndicator';
 
 const ITEMS = [
+  { to: '/nutrition/meals', icon: '🍱', title: 'Minhas refeições', sub: 'Marmitas, ingredientes e macros personalizados' },
+  { to: '/nutrition/foods', icon: '🍎', title: 'Meus alimentos', sub: 'Cadastrar alimentos e valores do rótulo' },
   { to: '/exercises', icon: '💪', title: 'Exercicios', sub: 'Biblioteca e meus exercicios' },
   { to: '/program', icon: '🗓️', title: 'Programa', sub: 'Dias fixos, ciclo e pausa' },
   { to: '/periodization', icon: '📐', title: 'Periodizacao', sub: 'Semanas, deload e intensidade' },

@@ -353,7 +353,7 @@ export interface NutrientValues {
   fiber?: number | null;
 }
 
-export type FoodSource = 'open-food-facts' | 'usda' | 'manual';
+export type FoodSource = 'open-food-facts' | 'usda' | 'taco' | 'manual';
 export type FoodUnit = 'g' | 'ml' | 'unidade' | 'porcao';
 
 /** Formato normalizado usado por qualquer provider nutricional. */
@@ -411,6 +411,8 @@ export interface SavedMealItem {
 export interface SavedMeal extends WithMeta, Ownable {
   name: string;
   items: SavedMealItem[];
+  /** Totais informados pelo usuário para uma marmita/porção completa. */
+  manualNutrients?: NutrientValues | null;
 }
 
 export type FoodLogStatus = 'planned' | 'consumed';

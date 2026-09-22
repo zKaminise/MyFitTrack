@@ -6,7 +6,8 @@ import { estimate1RM } from '@/domain/oneRepMax';
 /** Series completas da ultima sessao em que o exercicio foi executado. */
 export interface LastPerformance {
   date: string;
-  sets: { weight: number | null; reps: number | null }[];
+  workoutName: string;
+  sets: Pick<SetLog, 'weight' | 'reps' | 'setType' | 'setIndex'>[];
 }
 
 export function findLastPerformance(
@@ -24,9 +25,10 @@ export function findLastPerformance(
     if (ex) {
       return {
         date: session.date,
+        workoutName: session.workoutName,
         sets: ex.sets
           .filter((s) => s.completed)
-          .map((s) => ({ weight: s.weight, reps: s.reps })),
+          .map((s) => ({ weight: s.weight, reps: s.reps, setType: s.setType, setIndex: s.setIndex })),
       };
     }
   }

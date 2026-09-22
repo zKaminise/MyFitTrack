@@ -52,5 +52,21 @@ ainda precisam ser publicadas antes do smoke test desta rodada: **CODE READY —
 - smoke test real das migrations, RLS e sync em duas contas depende do deploy no Supabase;
 - QA autenticado das novas telas em 375/390/430/1440 depende de uma sessao de teste; o login publico foi validado sem overflow.
 
+## Atualização 2026-09-22 — referências e refeições
+
+COMPLETE (implementação local):
+
+- Referência de peso/reps entre treinos pelo exercício executado, tipo e ocorrência da série, com origem visível e pré-preenchimento correspondente.
+- `Mais → Minhas refeições`: criar/editar marmitas, ingredientes e quantidades, macros calculados ou manuais por porção.
+- `Mais → Meus alimentos`: cadastro privado de alimento por 100 g.
+- Adicionar uma refeição pronta ou porção fracionada no diário; metas calculadas e histórico preservado ao editar a receita.
+- 582 alimentos TACO com macros completos embarcados; busca sem acento e complemento de marcas online sob demanda.
+- Backup/restore do campo opcional de macros e compatibilidade com refeições antigas.
+- 92 testes automatizados aprovados, incluindo associação de séries, busca offline, isolamento de alimento privado, porções, histórico e backup/restore.
+
+QA realmente executado em navegador local isolado, sem usar dados pessoais ou a conta cloud: referências A/E (trabalho a 50 kg sem confundir ajuste a 35 kg), registro de série/timer e reload; criação e edição de Marmita Almoço (arroz 150 g + patinho 200 g), macros manuais 650 kcal, lançamento de 0,5 porção (325 kcal), chocolate 25 g e totais (459,9 kcal), persistência após reload, busca por maçã, resposta real da busca pública Open Food Facts. Layouts revisados em 390 e 1440 px. Não equivale a teste de Safari físico, instalação PWA ou sync de produção.
+
+Esta rodada não exige nova migration nem variável de ambiente. Publicação na Vercel e verificação na conta real não foram executadas.
+
 Fora de escopo de forma intencional: feed, seguidores, clubes, pagamentos,
 IA, chat, rankings e integracoes sociais.

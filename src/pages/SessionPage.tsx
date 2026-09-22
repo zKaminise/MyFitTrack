@@ -9,7 +9,9 @@ import { ExercisePicker } from '@/components/ExercisePicker';
 import { Sheet } from '@/ui/components';
 import { confirmAction, toast, vibrate } from '@/ui/feedback';
 import type { Exercise, SessionExercise, SetLog, PerceivedEffort } from '@/domain/types';
-import { findLastPerformance, lastWorkingSets } from '@/services/history';
+import { findLastPerformance, lastWorkingSets, type LastPerformance } from '@/services/history';
+import { performanceReferences, type SetReference } from '@/domain/performanceReference';
+import { shortDate } from '@/domain/dates';
 import { evaluateProgression, doubleProgressionHint } from '@/domain/progression';
 import { sessionVolume, sessionCompletedSets, percentChange } from '@/domain/volume';
 import { MUSCLE_LABEL, EFFORT_LABEL, EFFORT_ORDER, SET_TYPE_LABEL, repRange, formatDuration, formatNumber } from '@/lib/labels';
@@ -76,7 +78,8 @@ export default function SessionPage() {
             key={ex.id}
             ex={ex}
             performed={exMap.get(ex.performedExerciseId)}
-            previousSets={findLastPerformance(sessions, ex.performedExerciseId, active.id)?.sets ?? []}
+            previousSets={performanceReferences(sessions, ex.performedExerciseId, ex.sets, active.id)}
+            lastPerformance={findLastPerformance(sessions, ex.performedExerciseId, active.id)}
             progressionSets={lastWorkingSets(sessions, ex.performedExerciseId, active.id)}
             onMenu={() => setMenuFor(ex)}
           />
@@ -147,12 +150,14 @@ function ExerciseCard({
   ex,
   performed,
   previousSets,
+  lastPerformance,
   progressionSets,
   onMenu,
 }: {
   ex: SessionExercise;
   performed: Exercise | undefined;
-  previousSets: { weight: number | null; reps: number | null }[];
+  previousSets: (SetReference | null)[];
+  lastPerformance: LastPerformance | null;
   progressionSets: Pick<SetLog, 'reps' | 'weight' | 'completed' | 'setType'>[];
   onMenu: () => void;
 }) {
@@ -213,6 +218,15 @@ function ExerciseCard({
 
       {ex.notes && <div className="exercise-session-note"><span>📝 Ponto de atenção</span><strong>{ex.notes}</strong></div>}
 
+      {lastPerformance && <details className="performance-reference">
+        <summary>Última execução · {lastPerformance.workoutName} · {shortDate(lastPerformance.date)}</summary>
+        <p>Referências de todos os treinos, por tipo de série. A carga de hoje continua sendo sua escolha.</p>
+        {lastPerformance.sets.map((set, index) => <div className="row-between" key={index}>
+          <span>{set.setIndex} · {SET_TYPE_LABEL[set.setType]}</span>
+          <strong>{set.weight ?? '—'} × {set.reps ?? '—'}</strong>
+        </div>)}
+      </details>}
+
       {progression && progression.direction !== 'insufficient' && (
         <div className={`badge-progress ${progression.direction === 'increase' ? 'increase' : progression.direction === 'reduce' ? 'reduce' : 'hold'}`} style={{ marginTop: 10 }}>
           <span className="bp-ico">{progression.direction === 'increase' ? '⬆' : progression.direction === 'reduce' ? '↓' : '→'}</span>
@@ -242,6 +256,8 @@ function ExerciseCard({
                   <td className="set-idx set-target-cell"><strong>{set.setIndex}</strong><span>{SET_TYPE_LABEL[set.setType]}</span><small>{repRange(set.targetRepMin ?? ex.repMin, set.targetRepMax ?? ex.repMax)} reps · {set.restSeconds ?? ex.restSeconds}s</small>{set.intraSetRestSeconds ? <small>pausa interna {set.intraSetRestSeconds}s</small> : null}{set.prescriptionNotes ? <em>{set.prescriptionNotes}</em> : null}</td>
                   <td className="set-prev">
                     {prev && prev.weight != null ? `${prev.weight} × ${prev.reps ?? '-'}` : '—'}
+                    {prev && <small className="reference-source">{prev.workoutName} · {shortDate(prev.date)}<br />{SET_TYPE_LABEL[prev.setType]} · série {prev.setIndex}{prev.reused ? ' (referência repetida)' : ''}</small>}
+                    {prev && prev.targetRepMin != null && prev.targetRepMax != null && (prev.targetRepMin !== (set.targetRepMin ?? ex.repMin) || prev.targetRepMax !== (set.targetRepMax ?? ex.repMax)) && <small className="reference-source">Meta anterior: {repRange(prev.targetRepMin, prev.targetRepMax)}</small>}
                   </td>
                   <td>
                     <input

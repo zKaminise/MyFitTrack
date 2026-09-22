@@ -124,7 +124,11 @@ export const backupSchema = z.object({
   scheduleOverrides: z.array(z.object({ ...meta }).passthrough()).default([]),
   nutritionSettings: z.array(z.object({ ...meta }).passthrough()).default([]),
   userFoods: z.array(z.object({ ...meta }).passthrough()).default([]),
-  savedMeals: z.array(z.object({ ...meta }).passthrough()).default([]),
+  savedMeals: z.array(z.object({ ...meta, manualNutrients: z.object({
+    calories: z.number().finite().nonnegative(), protein: z.number().finite().nonnegative(),
+    carbs: z.number().finite().nonnegative(), fat: z.number().finite().nonnegative(),
+    fiber: z.number().finite().nonnegative().nullable().optional(),
+  }).nullable().optional() }).passthrough()).default([]),
   nutritionDays: z.array(z.object({ ...meta }).passthrough()).default([]),
 });
 

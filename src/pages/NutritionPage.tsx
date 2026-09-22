@@ -1,15 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { Sheet } from '@/ui/components';
-import { useNutritionDay, useNutritionDays, useNutritionSettings, useSavedMeals, useUserFoods } from '@/hooks/useData';
+import { useNutritionDay, useNutritionDays, useNutritionSettings } from '@/hooks/useData';
 import { addDays, longDate, todayISO } from '@/domain/dates';
-import { nutritionDayTotals, nutrientsForFood } from '@/domain/nutrition';
-import type { FoodLogStatus, FoodReference, SavedMeal } from '@/domain/types';
-import { addFoodToDay, addSavedMealToDay, createManualFood, ensureNutritionSettings, removeFoodLog, updateFoodLog } from '@/services/nutritionService';
-import { searchFoods } from '@/nutrition/foodSearch';
+import { nutritionDayTotals } from '@/domain/nutrition';
+import { ensureNutritionSettings, removeFoodLog, updateFoodLog } from '@/services/nutritionService';
 import { toast } from '@/ui/feedback';
-import { db } from '@/db/database';
+import { FoodPicker } from '@/components/FoodPicker';
 
 const n = (value: number) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value);
 const percent = (value: number, target: number) => Math.min(100, target ? value / target * 100 : 0);
@@ -46,28 +42,9 @@ export default function NutritionPage() {
         </section>;
       })}
     </div>
-    <FoodPicker open={Boolean(slotId)} slotId={slotId ?? ''} date={date} onClose={() => setSlotId(null)} />
+    {slotId && <FoodPicker slotId={slotId} date={date} onClose={() => setSlotId(null)} />}
   </div>;
 }
 
 function Progress({value,target}:{value:number;target:number}) { return <div className="nutrition-progress"><span style={{width:`${percent(value,target)}%`}}/></div>; }
 function Macro({label,short,value,target}:{label:string;short:string;value:number;target:number}) { return <div className="macro"><div className="row-between"><span><b>{short}</b> {label}</span><small>{n(value)} / {n(target)}g</small></div><Progress value={value} target={target}/></div>; }
-
-function FoodPicker({open,slotId,date,onClose}:{open:boolean;slotId:string;date:string;onClose:()=>void}) {
-  const settings = useNutritionSettings(); const userFoods = useUserFoods(); const meals = useSavedMeals() ?? [];
-  const foodCache = useLiveQuery(() => db.foodCache.toArray(), [], []);
-  const [tab,setTab] = useState<'search'|'recent'|'favorites'|'mine'|'meals'|'manual'>('search'); const [query,setQuery]=useState(''); const [results,setResults]=useState<FoodReference[]>([]); const [loading,setLoading]=useState(false); const [selected,setSelected]=useState<FoodReference|null>(null); const [selectedMeal,setSelectedMeal]=useState<SavedMeal|null>(null); const [quantity,setQuantity]=useState(100); const [status,setStatus]=useState<FoodLogStatus>('consumed');
-  useEffect(()=>{ if(tab!=='search'||query.trim().length<2){setResults([]);return;} const ctrl=new AbortController(); const id=setTimeout(()=>{setLoading(true); void searchFoods(query,ctrl.signal).then(setResults).catch(()=>setResults([])).finally(()=>setLoading(false));},450); return()=>{clearTimeout(id);ctrl.abort();};},[query,tab]);
-  const cached = useMemo(() => [...(userFoods ?? []), ...(foodCache ?? []).map(row => row.food)].filter((food,index,all)=>all.findIndex(candidate=>candidate.id===food.id)===index) as FoodReference[], [userFoods, foodCache]);
-  const visible = tab==='mine' ? cached : tab==='recent' ? cached.filter(f=>settings?.recentFoodIds.includes(f.id)) : tab==='favorites' ? cached.filter(f=>settings?.favoriteFoodIds.includes(f.id)) : results;
-  const choose = (food:FoodReference)=>{setSelected(food);setSelectedMeal(null);setQuantity(food.servingWeightGrams ?? 100);};
-  async function add(){ if(selected){await addFoodToDay({date,mealSlotId:slotId,food:selected,quantity,unit:'g',status});} else if(selectedMeal){await addSavedMealToDay({date,mealSlotId:slotId,meal:selectedMeal,portions:quantity,status});} else return; toast(status==='planned'?'Adicionado ao planejamento':'Adicionado ao dia'); setSelected(null);setSelectedMeal(null);onClose(); }
-  return <Sheet open={open} onClose={onClose} title="Adicionar à refeição" subtitle="Busque online ou use seus itens disponíveis offline." className="food-picker-sheet">
-    {!selected && !selectedMeal ? <><div className="food-tabs">{([['search','Buscar'],['recent','Recentes'],['favorites','Favoritos'],['mine','Meus'],['meals','Refeições'],['manual','Criar']] as const).map(([id,label])=><button className={tab===id?'active':''} onClick={()=>setTab(id)} key={id}>{label}</button>)}</div>
-      {tab==='search'&&<input className="input" autoFocus placeholder="Buscar alimento ou marca..." value={query} onChange={e=>setQuery(e.target.value)}/>} {loading&&<p className="muted">Buscando alimentos...</p>}
-      {tab==='meals'?<div className="food-results">{meals.map(m=><button className="food-result" key={m.id} onClick={()=>{setSelectedMeal(m);setQuantity(1)}}><span className="grow"><strong>{m.name}</strong><small>{m.items.length} ingredientes</small></span><span>＋</span></button>)}</div>:tab==='manual'?<ManualFood onCreated={choose}/>:<div className="food-results">{visible.map(food=><button className="food-result" key={food.id} onClick={()=>choose(food)}><span className="grow"><strong>{food.name}</strong><small>{food.brand ? `${food.brand} · `:''}{n(food.caloriesPer100g ?? 0)} kcal / 100g</small></span><span>＋</span></button>)}{tab==='search'&&!loading&&query.length>1&&!visible.length&&<p className="empty-small">Nenhum resultado. Você ainda pode criar um alimento manual.</p>}</div>}
-    </>:<div className="food-detail"><button className="btn btn--ghost" onClick={()=>{setSelected(null);setSelectedMeal(null)}}>← Voltar</button><h3>{selected?.name ?? selectedMeal?.name}</h3><label>Quantidade</label><div className="quantity-row"><input className="input" type="number" min="0.1" step="0.5" value={quantity} onChange={e=>setQuantity(Number(e.target.value))}/><span>{selectedMeal?'porção':'g'}</span></div>{selected&&<div className="macro-preview">{n(nutrientsForFood(selected,quantity,'g').calories)} kcal</div>}<div className="segmented"><button className={status==='consumed'?'active':''} onClick={()=>setStatus('consumed')}>Consumido</button><button className={status==='planned'?'active':''} onClick={()=>setStatus('planned')}>Planejado</button></div><button className="btn btn--primary btn--block" onClick={()=>void add()}>ADICIONAR</button></div>}
-  </Sheet>;
-}
-
-function ManualFood({onCreated}:{onCreated:(f:FoodReference)=>void}) { const [name,setName]=useState(''); const [kcal,setKcal]=useState(0); const [protein,setProtein]=useState(0); const [carbs,setCarbs]=useState(0); const [fat,setFat]=useState(0); async function save(){if(!name.trim())return; const food=await createManualFood({name:name.trim(),brand:null,servingSize:100,servingUnit:'g',servingWeightGrams:100,caloriesPer100g:kcal,proteinPer100g:protein,carbsPer100g:carbs,fatPer100g:fat,fiberPer100g:null});onCreated(food);} const fields: Array<[string,number,(value:number)=>void]>=[['kcal',kcal,setKcal],['Proteína',protein,setProtein],['Carbo',carbs,setCarbs],['Gordura',fat,setFat]]; return <div className="manual-food stack-sm"><input className="input" placeholder="Nome do alimento" value={name} onChange={e=>setName(e.target.value)}/><p className="faint">Valores por 100 g</p><div className="macro-inputs">{fields.map(([label,value,setter])=><label key={label}>{label}<input className="input" type="number" value={value} onChange={e=>setter(Number(e.target.value))}/></label>)}</div><button className="btn btn--primary btn--block" onClick={()=>void save()}>CRIAR ALIMENTO</button></div>; }

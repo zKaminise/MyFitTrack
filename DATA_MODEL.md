@@ -83,11 +83,17 @@ uso offline" apos um restore.
 
 Somente itens `consumed` entram nos totais. Quantidades e nutrientes são persistidos no item diário para preservar o histórico.
 
+`SavedMeal.manualNutrients?: NutrientValues | null` guarda os macros informados da porção inteira. Quando ausente, `savedMealTotals` soma ingredientes. Quando presente, é a fonte dos totais (sem dupla contagem); o snapshot diário escala estes valores pela quantidade de porções. Backup valida números finitos e não negativos. O campo opcional é preservado nos agregados JSON do sync, sem mudança de tabelas.
+
+`FoodReference.source` também aceita `taco`. A base oficial é estática e compartilhada, sem duplicação por conta. Alimentos manuais são lidos exclusivamente de `userFoods` da conta atual, não de `foodCache`. Fontes e limites estão em `NUTRITION_DATA_SOURCES.md`.
+
 ## Prescrição por série
 
 `WorkoutExercise.setPrescriptions[]` é opcional para compatibilidade. Quando ausente, o domínio expande os campos legados (`sets`, `repMin`, `repMax`, `restSeconds`, `setType`) em séries iguais. Quando presente, cada item guarda faixa de repetições, tipo, descanso após a série, RIR/RPE, pausa interna de técnicas como rest-pause e observação própria.
 
 Ao iniciar o treino, cada prescrição vira um `SetLog` com snapshot de `targetRepMin`, `targetRepMax`, `restSeconds`, `setType`, `intraSetRestSeconds` e `prescriptionNotes`. Alterações futuras no template não reescrevem sessões anteriores.
+
+As referências anteriores são derivadas por `performedExerciseId`, entre todos os treinos concluídos, por tipo de série e posição dentro daquele tipo. `normal` equivale a `trabalho` para compatibilidade. Séries não concluídas não deslocam as posições. Se não existir aquela ocorrência, a última concluída do mesmo tipo é exibida como referência repetida; tipos ausentes podem consultar execuções anteriores, sempre com treino/data visíveis. Séries de aquecimento/ajuste nunca são usadas no lugar das de trabalho. O pré-preenchimento usa a mesma regra, sem marcar a série como concluída ou prescrever uma carga obrigatória.
 
 ## Exercícios autorais
 
