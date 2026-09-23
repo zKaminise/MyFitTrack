@@ -16,13 +16,18 @@ import { openFoodFactsProvider } from '@/nutrition/providers/openFoodFacts';
 
 afterEach(async () => { await Promise.all([db.savedMeals.clear(), db.nutritionDays.clear(), db.nutritionSettings.clear(), db.foodCache.clear(), db.userFoods.clear()]); setCurrentUserId(null); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 describe('Marmita e alimento avulso nas metas', () => {
-  it('contabiliza macros manuais, meia porção e chocolate sem alterar o histórico ao editar a marmita', async () => {
+  it('soma ingredientes automaticamente, escala meia porção e não altera o histórico ao editar a refeição', async () => {
     setCurrentUserId('qa-user');
     const rice = localFoods.find(f => f.name === 'Arroz, tipo 1, cozido')!;
     expect(rice).toBeTruthy();
+    const eggs = { id: 'eggs', source: 'manual' as const, sourceId: 'eggs', name: 'Ovos', servingSize: 2, servingUnit: 'unidade' as const, servingWeightGrams: null,
+      servingNutrients: { calories: 140, protein: 12.6, carbs: .7, fat: 9.5 }, caloriesPer100g: null, proteinPer100g: null, carbsPer100g: null, fatPer100g: null };
     const meal: SavedMeal = { id: 'marmita', userId: 'qa-user', name: 'Marmita Almoço', createdAt: '', updatedAt: '',
-      items: [{ id: 'arroz', food: rice, quantity: 150, unit: 'g', nutrients: nutrientsForFood(rice, 150, 'g') }],
-      manualNutrients: { calories: 650, protein: 45, carbs: 70, fat: 20 },
+      items: [
+        { id: 'arroz', food: rice, quantity: 150, unit: 'g', nutrients: nutrientsForFood(rice, 150, 'g') },
+        { id: 'ovos', food: eggs, quantity: 2, unit: 'unidade', nutrients: nutrientsForFood(eggs, 2, 'unidade') },
+      ],
+      manualNutrients: { calories: 999, protein: 0, carbs: 0, fat: 0 },
     };
     await savedMealRepo.put(meal);
     await addSavedMealToDay({ date: '2026-09-22', mealSlotId: 'almoço', meal, portions: .5, status: 'consumed' });
@@ -30,12 +35,13 @@ describe('Marmita e alimento avulso nas metas', () => {
     const chocolate = filterFoodCatalog(localFoods, 'chocolate ao leite')[0];
     expect(chocolate).toBeTruthy();
     await addFoodToDay({ date: '2026-09-22', mealSlotId: 'lanche', food: chocolate, quantity: 25, unit: 'g', status: 'consumed' });
-    await savedMealRepo.put({ ...meal, manualNutrients: { calories: 900, protein: 60, carbs: 90, fat: 30 } });
+    const mealTotal = nutrientsForFood(rice, 150, 'g').calories + 140;
+    await savedMealRepo.put({ ...meal, items: meal.items.slice(0, 1), manualNutrients: null });
     const day = (await db.nutritionDays.toArray())[0];
-    expect(day.items[0].components?.[0].quantity).toBe(75);
-    expect(day.items[0].nutrients.calories).toBe(325);
-    expect(nutritionDayTotals(day).calories).toBeCloseTo(325 + chocolate.caloriesPer100g! / 4);
-    expect(nutritionDayTotals(day, 'planned').calories).toBe(650);
+    expect(day.items[0].components?.map(component => component.quantity)).toEqual([75, 1]);
+    expect(day.items[0].nutrients.calories).toBeCloseTo(mealTotal / 2);
+    expect(nutritionDayTotals(day).calories).toBeCloseTo(mealTotal / 2 + chocolate.caloriesPer100g! / 4);
+    expect(nutritionDayTotals(day, 'planned').calories).toBeCloseTo(mealTotal);
     await expect(addSavedMealToDay({ date: '2026-09-22', mealSlotId: 'almoço', meal, portions: 0, status: 'consumed' })).rejects.toThrow();
   });
   it('busca alimentos cotidianos sem acento e não expõe alimento manual de outra conta', async () => {
@@ -62,13 +68,19 @@ describe('Marmita e alimento avulso nas metas', () => {
       items: [{ id: 'rice', food, quantity: 150, unit: 'g', nutrients: nutrientsForFood(food, 150, 'g') }],
       manualNutrients: { calories: 650, protein: 45, carbs: 70, fat: 20 } };
     await savedMealRepo.put(meal);
+    const customFood = { id: 'custom-eggs', userId: 'qa-user', source: 'manual' as const, sourceId: 'custom-eggs', name: 'Ovos', createdAt: '', updatedAt: '',
+      servingSize: 2, servingUnit: 'unidade' as const, servingWeightGrams: null, servingNutrients: { calories: 140, protein: 12.6, carbs: .7, fat: 9.5 },
+      caloriesPer100g: null, proteinPer100g: null, carbsPer100g: null, fatPer100g: null };
+    await db.userFoods.put(customFood);
     const backup = await buildBackup();
     const parsed = validateBackup(JSON.parse(JSON.stringify(backup)));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) throw new Error(parsed.error);
     await db.savedMeals.clear();
+    await db.userFoods.clear();
     await restoreBackup(parsed.data);
     expect(await db.savedMeals.get(meal.id)).toEqual(meal);
+    expect(await db.userFoods.get(customFood.id)).toEqual(customFood);
     expect(validateBackup({ ...backup, savedMeals: [{ ...meal, manualNutrients: { ...meal.manualNutrients, calories: -1 } }] }).ok).toBe(false);
     const legacy = { ...meal }; delete legacy.manualNutrients;
     expect(validateBackup({ ...backup, savedMeals: [legacy] }).ok).toBe(true);

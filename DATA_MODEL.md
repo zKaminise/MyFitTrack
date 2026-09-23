@@ -83,7 +83,9 @@ uso offline" apos um restore.
 
 Somente itens `consumed` entram nos totais. Quantidades e nutrientes são persistidos no item diário para preservar o histórico.
 
-`SavedMeal.manualNutrients?: NutrientValues | null` guarda os macros informados da porção inteira. Quando ausente, `savedMealTotals` soma ingredientes. Quando presente, é a fonte dos totais (sem dupla contagem); o snapshot diário escala estes valores pela quantidade de porções. Backup valida números finitos e não negativos. O campo opcional é preservado nos agregados JSON do sync, sem mudança de tabelas.
+`FoodReference.servingNutrients` guarda os macros da porção-base de um alimento pessoal. `servingSize` + `servingUnit` descrevem essa base, como `2 unidades`, `1 fatia` ou `150 g`. Para peso também são derivados valores por 100 g; para unidades e fatias não se inventa conversão em peso. `nutrientsForFood` escala pela proporção entre quantidade usada e porção-base.
+
+`SavedMeal` soma sempre os snapshots nutricionais dos ingredientes. `manualNutrients` é um campo legado preservado apenas para aceitar backups anteriores e não substitui mais a soma. Ao editar uma refeição antiga, ele é limpo. O diário mantém snapshots imutáveis, portanto alterações posteriores na receita não mudam registros já consumidos.
 
 `FoodReference.source` também aceita `taco`. A base oficial é estática e compartilhada, sem duplicação por conta. Alimentos manuais são lidos exclusivamente de `userFoods` da conta atual, não de `foodCache`. Fontes e limites estão em `NUTRITION_DATA_SOURCES.md`.
 

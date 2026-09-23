@@ -42,12 +42,48 @@ function gramsFor(food: FoodReference, quantity: number, unit: FoodUnit): number
   return quantity * (servingGrams ?? 100);
 }
 
+export function foodUnitLabel(unit: FoodUnit, quantity = 1): string {
+  if (unit === 'g' || unit === 'ml') return unit;
+  if (unit === 'fatia') return quantity === 1 ? 'fatia' : 'fatias';
+  if (unit === 'unidade') return quantity === 1 ? 'unidade' : 'unidades';
+  return quantity === 1 ? 'porção' : 'porções';
+}
+
+export function defaultFoodUnit(food: FoodReference): FoodUnit {
+  return food.servingNutrients && food.servingUnit ? food.servingUnit : 'g';
+}
+
+export function defaultFoodQuantity(food: FoodReference): number {
+  if (food.servingNutrients && food.servingSize && food.servingSize > 0) return food.servingSize;
+  return food.servingWeightGrams && food.servingWeightGrams > 0 ? food.servingWeightGrams : 100;
+}
+
+export function foodReferenceNutrients(food: FoodReference): NutrientValues {
+  return food.servingNutrients ?? {
+    calories: food.caloriesPer100g ?? 0,
+    protein: food.proteinPer100g ?? 0,
+    carbs: food.carbsPer100g ?? 0,
+    fat: food.fatPer100g ?? 0,
+    fiber: food.fiberPer100g ?? 0,
+  };
+}
+
+export function foodReferenceLabel(food: FoodReference): string {
+  if (food.servingNutrients && food.servingSize && food.servingUnit) {
+    return `${food.servingSize} ${foodUnitLabel(food.servingUnit, food.servingSize)}`;
+  }
+  return '100 g';
+}
+
 /** Calcula sem arredondar; arredondamento pertence somente a apresentacao. */
 export function nutrientsForFood(
   food: FoodReference,
   quantity: number,
   unit: FoodUnit,
 ): NutrientValues {
+  if (food.servingNutrients && food.servingSize && food.servingSize > 0 && food.servingUnit === unit) {
+    return scaleNutrients(food.servingNutrients, quantity / food.servingSize);
+  }
   const factor = gramsFor(food, quantity, unit) / 100;
   return {
     calories: (food.caloriesPer100g ?? 0) * factor,
@@ -63,7 +99,8 @@ export function sumNutrients(values: NutrientValues[]): NutrientValues {
 }
 
 export function savedMealTotals(meal: Pick<SavedMeal, 'items' | 'manualNutrients'>): NutrientValues {
-  if (meal.manualNutrients) return meal.manualNutrients;
+  // `manualNutrients` permanece apenas para importar backups antigos. Novas
+  // refeições são sempre a soma auditável dos ingredientes.
   return sumNutrients(meal.items.map((item) => item.nutrients));
 }
 
@@ -81,8 +118,8 @@ export function nutritionDayTotals(day: NutritionDay | undefined, status: 'plann
 }
 
 export function hasCompleteMacros(food: FoodReference): boolean {
-  return food.caloriesPer100g != null
+  return !!food.servingNutrients || (food.caloriesPer100g != null
     && food.proteinPer100g != null
     && food.carbsPer100g != null
-    && food.fatPer100g != null;
+    && food.fatPer100g != null);
 }

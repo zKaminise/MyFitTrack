@@ -354,7 +354,7 @@ export interface NutrientValues {
 }
 
 export type FoodSource = 'open-food-facts' | 'usda' | 'taco' | 'manual';
-export type FoodUnit = 'g' | 'ml' | 'unidade' | 'porcao';
+export type FoodUnit = 'g' | 'ml' | 'unidade' | 'fatia' | 'porcao';
 
 /** Formato normalizado usado por qualquer provider nutricional. */
 export interface FoodReference {
@@ -366,6 +366,8 @@ export interface FoodReference {
   servingSize?: number | null;
   servingUnit?: FoodUnit | null;
   servingWeightGrams?: number | null;
+  /** Macros da porção-base cadastrada (ex.: 2 unidades, 1 fatia ou 150 g). */
+  servingNutrients?: NutrientValues | null;
   caloriesPer100g: number | null;
   proteinPer100g: number | null;
   carbsPer100g: number | null;
@@ -411,7 +413,7 @@ export interface SavedMealItem {
 export interface SavedMeal extends WithMeta, Ownable {
   name: string;
   items: SavedMealItem[];
-  /** Totais informados pelo usuário para uma marmita/porção completa. */
+  /** Campo legado mantido somente para importar backups anteriores. */
   manualNutrients?: NutrientValues | null;
 }
 

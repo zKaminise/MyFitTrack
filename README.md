@@ -3,9 +3,9 @@
 ### Referências de série e refeições personalizadas
 
 - Durante o treino, a coluna **Anterior** encontra séries do mesmo exercício em qualquer treino, associando aquecimento, ajuste e trabalho separadamente. Exibe a data e o treino de origem; a carga continua editável.
-- Em **Mais → Minhas refeições**, monte marmitas com ingredientes/quantidades e escolha calcular ou informar os totais de kcal, proteína, carboidratos e gordura.
+- Em **Mais → Minhas refeições**, monte refeições reutilizáveis; kcal, proteína, carboidratos e gordura são somados automaticamente a partir dos ingredientes.
 - Em **Alimentação → Adicionar → Minhas refeições**, lance uma ou mais porções (inclusive 0,5). Só os itens consumidos contam nas metas.
-- Em **Mais → Meus alimentos**, cadastre valores por 100 g. A busca também inclui 582 alimentos brasileiros offline e produtos online sob demanda.
+- Em **Mais → Meus alimentos**, cadastre uma porção-base em gramas, unidades ou fatias e informe os macros correspondentes. Valores decimais aceitam vírgula. A busca também inclui 582 alimentos brasileiros offline e produtos online sob demanda.
 - Fontes, atribuição e comportamento do cache: [NUTRITION_DATA_SOURCES.md](NUTRITION_DATA_SOURCES.md).
 
 Esses ajustes usam as tabelas e configurações existentes, sem nova migration ou variável de ambiente.

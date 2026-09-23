@@ -30,6 +30,8 @@ O catálogo faz parte do bundle/PWA, não requer API, chave ou conexão. Não é
 
 Alimentos manuais pertencem à conta e ficam em `userFoods`, nunca no cache público de produtos. Refeições pertencem à conta e ficam em `savedMeals`. Ambas usam os repositórios locais e a fila de sincronização já existentes.
 
-Uma refeição salva contém nome, ingredientes, quantidades e, opcionalmente, `manualNutrients`: os totais de **uma porção inteira**. Esses valores substituem, e não somam novamente, os macros calculados pelos ingredientes. Porções fracionadas escalam ingredientes e totais. Ao lançar no diário, os valores são copiados: editar a receita posteriormente não altera os dias já registrados.
+Um alimento pessoal pode usar uma porção-base em gramas, unidades ou fatias. Os macros informados pertencem exatamente a essa base; por exemplo, `2 unidades` de ovo ou `1 fatia` de bacon. Quantidades diferentes são calculadas proporcionalmente. Valores com vírgula decimal são aceitos pela interface.
 
-Backups incluem refeições, macros manuais, ingredientes e alimentos pessoais. Não precisam incluir a biblioteca estática nem o cache público. O novo campo é opcional e dispensa migration de IndexedDB ou SQL; backups anteriores continuam usando a soma dos ingredientes.
+Uma refeição salva contém nome, ingredientes e quantidades. Seus macros são sempre a soma automática dos ingredientes. Porções fracionadas escalam ingredientes e totais. Ao lançar no diário, os valores são copiados: editar a receita posteriormente não altera os dias já registrados.
+
+Backups incluem refeições, ingredientes, porções-base e alimentos pessoais. Não precisam incluir a biblioteca estática nem o cache público. Os novos campos são opcionais e dispensam migration de IndexedDB ou SQL; alimentos e backups anteriores continuam compatíveis.

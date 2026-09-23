@@ -57,8 +57,8 @@ ainda precisam ser publicadas antes do smoke test desta rodada: **CODE READY —
 COMPLETE (implementação local):
 
 - Referência de peso/reps entre treinos pelo exercício executado, tipo e ocorrência da série, com origem visível e pré-preenchimento correspondente.
-- `Mais → Minhas refeições`: criar/editar marmitas, ingredientes e quantidades, macros calculados ou manuais por porção.
-- `Mais → Meus alimentos`: cadastro privado de alimento por 100 g.
+- `Mais → Minhas refeições`: criar/editar refeições, ingredientes e quantidades, com soma automática dos macros.
+- `Mais → Meus alimentos`: cadastro privado por gramas, unidades ou fatias, aceitando vírgula decimal.
 - Adicionar uma refeição pronta ou porção fracionada no diário; metas calculadas e histórico preservado ao editar a receita.
 - 582 alimentos TACO com macros completos embarcados; busca sem acento e complemento de marcas online sob demanda.
 - Backup/restore do campo opcional de macros e compatibilidade com refeições antigas.
@@ -67,6 +67,17 @@ COMPLETE (implementação local):
 QA realmente executado em navegador local isolado, sem usar dados pessoais ou a conta cloud: referências A/E (trabalho a 50 kg sem confundir ajuste a 35 kg), registro de série/timer e reload; criação e edição de Marmita Almoço (arroz 150 g + patinho 200 g), macros manuais 650 kcal, lançamento de 0,5 porção (325 kcal), chocolate 25 g e totais (459,9 kcal), persistência após reload, busca por maçã, resposta real da busca pública Open Food Facts. Layouts revisados em 390 e 1440 px. Não equivale a teste de Safari físico, instalação PWA ou sync de produção.
 
 Esta rodada não exige nova migration nem variável de ambiente. Publicação na Vercel e verificação na conta real não foram executadas.
+
+## Atualização — porções personalizadas de alimentos
+
+COMPLETE:
+
+- Campos numéricos localizados aceitam `0,7`, `0,3`, ponto decimal e estado vazio durante a digitação.
+- Alimento pessoal configurável por peso em gramas, quantidade/unidades ou fatias.
+- Macros vinculados à porção-base escolhida e escalados proporcionalmente ao alterar a quantidade.
+- Alimento criado dentro da refeição é salvo na conta e adicionado imediatamente como ingrediente.
+- Totais da refeição são sempre somados automaticamente pelos ingredientes; totais manuais antigos permanecem apenas como compatibilidade de backup.
+- QA mobile local em 390 px: `2 unidades` de ovos (140 kcal, P 12,6, C 0,7, G 9,5) + `1 fatia` de bacon (45 kcal, P 3, C 0,3, G 3,5) = 185 kcal, P 15,6, C 1, G 13. Reutilização dos ovos em uma segunda refeição confirmada.
 
 Fora de escopo de forma intencional: feed, seguidores, clubes, pagamentos,
 IA, chat, rankings e integracoes sociais.

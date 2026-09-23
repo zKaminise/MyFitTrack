@@ -4,14 +4,16 @@ import { cachedFoods } from '@/nutrition/foodSearch';
 import { localFoods, foodSourceLabel, filterFoodCatalog } from '@/nutrition/localFoods';
 import { openFoodFactsProvider } from '@/nutrition/providers/openFoodFacts';
 import { cacheFood } from '@/services/nutritionService';
+import { foodReferenceLabel, foodReferenceNutrients } from '@/domain/nutrition';
 
 export const formatNutrient = (value: number) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value);
 
 export function FoodResult({ food, onPick }: { food: FoodReference; onPick: (food: FoodReference) => void }) {
+  const nutrients = foodReferenceNutrients(food);
   return <button className="food-result" onClick={() => onPick(food)}>
     <span className="grow"><strong>{food.name}</strong>
       <small>{food.brand ? `${food.brand} · ` : ''}{foodSourceLabel(food)}</small>
-      <small>{formatNutrient(food.caloriesPer100g ?? 0)} kcal · P {formatNutrient(food.proteinPer100g ?? 0)} · C {formatNutrient(food.carbsPer100g ?? 0)} · G {formatNutrient(food.fatPer100g ?? 0)} / 100 g</small>
+      <small>{formatNutrient(nutrients.calories)} kcal · P {formatNutrient(nutrients.protein)} · C {formatNutrient(nutrients.carbs)} · G {formatNutrient(nutrients.fat)} / {foodReferenceLabel(food)}</small>
     </span><span aria-hidden>＋</span>
   </button>;
 }

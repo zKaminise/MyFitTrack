@@ -5,7 +5,7 @@ import { Sheet } from '@/ui/components';
 import { useNutritionSettings, useSavedMeals, useUserFoods } from '@/hooks/useData';
 import { db } from '@/db/database';
 import type { FoodLogStatus, FoodReference, FoodUnit, SavedMeal } from '@/domain/types';
-import { nutrientsForFood, savedMealTotals, scaleNutrients } from '@/domain/nutrition';
+import { defaultFoodQuantity, defaultFoodUnit, foodReferenceLabel, foodUnitLabel, nutrientsForFood, savedMealTotals, scaleNutrients } from '@/domain/nutrition';
 import { addFoodToDay, addSavedMealToDay } from '@/services/nutritionService';
 import { localFoods, foodSourceLabel } from '@/nutrition/localFoods';
 import { FoodResult, FoodSearchPanel, formatNutrient as n } from './FoodSearchPanel';
@@ -13,6 +13,7 @@ import { ManualFoodForm } from './ManualFoodForm';
 import { toast } from '@/ui/feedback';
 import { nutritionSettingsRepo } from '@/repositories/dexie';
 import { nowISO } from '@/lib/id';
+import { LocalizedDecimalInput } from './LocalizedDecimalInput';
 
 export function FoodPicker({ slotId, date, onClose }: { slotId: string; date: string; onClose: () => void }) {
   const nav = useNavigate();
@@ -23,7 +24,7 @@ export function FoodPicker({ slotId, date, onClose }: { slotId: string; date: st
   const [tab, setTab] = useState<'search' | 'recent' | 'favorites' | 'mine' | 'meals' | 'manual'>('search');
   const [food, setFood] = useState<FoodReference | null>(null);
   const [meal, setMeal] = useState<SavedMeal | null>(null);
-  const [quantity, setQuantity] = useState('100');
+  const [quantity, setQuantity] = useState<number | null>(100);
   const [unit, setUnit] = useState<FoodUnit>('g');
   const [status, setStatus] = useState<FoodLogStatus>('consumed');
   const [saving, setSaving] = useState(false);
@@ -32,11 +33,11 @@ export function FoodPicker({ slotId, date, onClose }: { slotId: string; date: st
   const visible = tab === 'mine' ? mine ?? [] : tab === 'recent'
     ? (settings?.recentFoodIds ?? []).map(id => available.find(f => f.id === id)).filter((f): f is FoodReference => !!f)
     : available.filter(f => settings?.favoriteFoodIds.includes(f.id));
-  const amount = Number(quantity);
+  const amount = quantity ?? Number.NaN;
   const valid = Number.isFinite(amount) && amount > 0;
   const totals = food ? nutrientsForFood(food, valid ? amount : 0, unit) : meal ? scaleNutrients(savedMealTotals(meal), valid ? amount : 0) : null;
   function choose(selected: FoodReference) {
-    setFood(selected); setMeal(null); setQuantity(String(selected.servingWeightGrams ?? 100)); setUnit('g');
+    setFood(selected); setMeal(null); setQuantity(defaultFoodQuantity(selected)); setUnit(defaultFoodUnit(selected));
   }
   async function add() {
     if (!valid || saving) return;
@@ -60,18 +61,19 @@ export function FoodPicker({ slotId, date, onClose }: { slotId: string; date: st
       {tab === 'search' ? <FoodSearchPanel onPick={choose} /> : tab === 'manual' ? <ManualFoodForm onCreated={choose} /> : tab === 'meals' ? <>
         <button className="btn btn--block" onClick={() => { onClose(); nav('/nutrition/meals'); }}>Gerenciar minhas refeições</button>
         {!meals.length && <p className="empty-small">Crie sua primeira marmita para adicioná-la aqui com um toque.</p>}
-        {meals.map(saved => { const t = savedMealTotals(saved); return <button className="food-result" key={saved.id} onClick={() => { setMeal(saved); setFood(null); setQuantity('1'); }}>
+        {meals.map(saved => { const t = savedMealTotals(saved); return <button className="food-result" key={saved.id} onClick={() => { setMeal(saved); setFood(null); setQuantity(1); }}>
           <span className="grow"><strong>{saved.name}</strong><small>{saved.items.length} ingredientes · 1 porção</small><small>{n(t.calories)} kcal · P {n(t.protein)} · C {n(t.carbs)} · G {n(t.fat)}</small></span><span>＋</span>
         </button>; })}
       </> : <div className="food-results">{visible.map(f => <FoodResult key={f.id} food={f} onPick={choose} />)}{!visible.length && <p className="empty-small">Nenhum item nesta lista ainda.</p>}</div>}
     </div> : <div className="food-detail stack-sm">
       <button className="btn btn--ghost" onClick={() => { setFood(null); setMeal(null); }}>← Voltar aos alimentos</button>
       <div className="row-between"><h3>{food?.name ?? meal?.name}</h3>{food && <button className="icon-btn" aria-label="Favoritar alimento" onClick={() => void favorite().catch(() => toast('Não foi possível favoritar'))}>{settings?.favoriteFoodIds.includes(food.id) ? '★' : '☆'}</button>}</div>
-      {food && <small className="faint">{foodSourceLabel(food)} · {food.brand ?? 'Composição por 100 g'}</small>}
+      {food && <small className="faint">{foodSourceLabel(food)} · {food.brand ?? `Macros por ${foodReferenceLabel(food)}`}</small>}
       {meal && <><p className="faint">1 porção = uma refeição completa. Use 0,5 para meia marmita.</p>{meal.items.map(item => <small key={item.id}>{item.food.name} · {n(item.quantity * (valid ? amount : 0))} {item.unit}</small>)}</>}
-      <label>Quantidade<div className="quantity-row"><input className="input" type="number" inputMode="decimal" min="0.1" step="any" value={quantity} onChange={e => setQuantity(e.target.value)} /><span>{meal ? 'porção(ões)' : unit}</span></div></label>
-      {food?.servingWeightGrams != null && food.servingWeightGrams > 0 && <div className="segmented"><button className={unit === 'g' ? 'active' : ''} onClick={() => { setUnit('g'); setQuantity(String(food.servingWeightGrams)); }}>Gramas</button><button className={unit === 'porcao' ? 'active' : ''} onClick={() => { setUnit('porcao'); setQuantity('1'); }}>Porção do rótulo ({food.servingWeightGrams} g)</button></div>}
-      {food && !food.servingWeightGrams && <small className="faint">Informe o peso em gramas. O tamanho de uma unidade pode variar.</small>}
+      <label>Quantidade<div className="quantity-row"><LocalizedDecimalInput value={quantity} min={0.01} ariaLabel="Quantidade" onValueChange={setQuantity} /><span>{meal ? foodUnitLabel('porcao', amount) : foodUnitLabel(unit, amount)}</span></div></label>
+      {food && !food.servingNutrients && food.servingWeightGrams != null && food.servingWeightGrams > 0 && <div className="segmented"><button className={unit === 'g' ? 'active' : ''} onClick={() => { setUnit('g'); setQuantity(food.servingWeightGrams ?? 100); }}>Gramas</button><button className={unit === 'porcao' ? 'active' : ''} onClick={() => { setUnit('porcao'); setQuantity(1); }}>Porção do rótulo ({food.servingWeightGrams} g)</button></div>}
+      {food?.servingNutrients && <small className="faint">Cadastro-base: {foodReferenceLabel(food)}. O total é recalculado para a quantidade escolhida.</small>}
+      {food && !food.servingNutrients && !food.servingWeightGrams && <small className="faint">Informe o peso em gramas. O tamanho de uma unidade pode variar.</small>}
       {totals && <div className="meal-total"><strong>{n(totals.calories)} kcal</strong><span>P {n(totals.protein)} g · C {n(totals.carbs)} g · G {n(totals.fat)} g</span></div>}
       <div className="segmented"><button className={status === 'consumed' ? 'active' : ''} onClick={() => setStatus('consumed')}>Consumido</button><button className={status === 'planned' ? 'active' : ''} onClick={() => setStatus('planned')}>Planejado</button></div>
       <button className="btn btn--primary btn--block" disabled={!valid || saving} onClick={() => void add()}>{saving ? 'REGISTRANDO...' : 'ADICIONAR'}</button>

@@ -1619,3 +1619,4 @@ h4 {
 .saved-meal-card h3{overflow-wrap:anywhere}.saved-meal-card p{color:var(--text-dim);font-size:13px;line-height:1.5}
 .saved-ingredient input{width:78px;flex-shrink:0}
 .food-detail small{line-height:1.5}
+.segmented.segmented--three{grid-template-columns:repeat(3,minmax(0,1fr))}.segmented.segmented--three button{white-space:normal;min-height:44px;padding:8px}
